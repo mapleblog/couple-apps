@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Calendar, Heart } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, Heart, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCouple } from '../contexts/CoupleContext';
 import { anniversaryService } from '../services/anniversaryService';
 import { Anniversary, AnniversaryFormData } from '../types';
 import AnniversaryForm from '../components/AnniversaryForm';
 import AnniversaryCard from '../components/AnniversaryCard';
+import FirebaseDiagnostic from '../components/FirebaseDiagnostic';
 
 const AnniversaryPage: React.FC = () => {
   const { user } = useAuth();
@@ -17,6 +18,12 @@ const AnniversaryPage: React.FC = () => {
   const [editingAnniversary, setEditingAnniversary] = useState<Anniversary | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'upcoming' | 'past'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'created' | 'type'>('date');
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [setupStatus, setSetupStatus] = useState<{
+    hasUser: boolean;
+    hasCouple: boolean;
+    isReady: boolean;
+  }>({ hasUser: false, hasCouple: false, isReady: false });
 
   // 表单状态
   const [formData, setFormData] = useState<AnniversaryFormData>({
@@ -28,8 +35,23 @@ const AnniversaryPage: React.FC = () => {
     reminderDays: 7
   });
 
+  // 检查设置状态
+  const checkSetupStatus = () => {
+    const hasUser = !!user;
+    const hasCouple = !!couple?.id;
+    const isReady = hasUser && hasCouple;
+    
+    setSetupStatus({ hasUser, hasCouple, isReady });
+    return isReady;
+  };
+
   // 加载纪念日数据
   const loadAnniversaries = async () => {
+    if (!checkSetupStatus()) {
+      setLoading(false);
+      return;
+    }
+    
     if (!couple?.id) return;
     
     try {
@@ -46,7 +68,11 @@ const AnniversaryPage: React.FC = () => {
 
   useEffect(() => {
     loadAnniversaries();
-  }, [couple?.id]);
+  }, [couple?.id, user]);
+
+  useEffect(() => {
+    checkSetupStatus();
+  }, [user, couple]);
 
   // 处理表单提交
   const handleSubmit = async (data: AnniversaryFormData) => {
@@ -143,6 +169,91 @@ const AnniversaryPage: React.FC = () => {
     return filtered;
   };
 
+  // 设置步骤引导组件
+  const SetupGuide = () => (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <Heart className="h-16 w-16 text-pink-500 mx-auto mb-4 animate-pulse" />
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">欢迎使用纪念日功能</h1>
+            <p className="text-gray-600">在开始记录美好时光之前，让我们先完成一些必要的设置</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-6">设置步骤</h2>
+            
+            <div className="space-y-4">
+              {/* 用户登录状态 */}
+              <div className="flex items-center p-4 rounded-lg border-2 border-gray-200">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 ${
+                  setupStatus.hasUser ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                }`}>
+                  {setupStatus.hasUser ? '✓' : '1'}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-800">用户登录</h3>
+                  <p className="text-sm text-gray-600">
+                    {setupStatus.hasUser ? '已登录' : '请先登录您的账户'}
+                  </p>
+                </div>
+                {setupStatus.hasUser && (
+                  <div className="text-green-600">
+                    <CheckCircle className="h-6 w-6" />
+                  </div>
+                )}
+              </div>
+
+              {/* 情侣档案创建 */}
+              <div className="flex items-center p-4 rounded-lg border-2 border-gray-200">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 ${
+                  setupStatus.hasCouple ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                }`}>
+                  {setupStatus.hasCouple ? '✓' : '2'}
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-800">创建情侣档案</h3>
+                  <p className="text-sm text-gray-600">
+                    {setupStatus.hasCouple ? '情侣档案已创建' : '需要创建或加入一个情侣档案'}
+                  </p>
+                </div>
+                {setupStatus.hasCouple ? (
+                  <div className="text-green-600">
+                    <CheckCircle className="h-6 w-6" />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => window.location.href = '/profile'}
+                    className="bg-pink-500 text-white px-4 py-2 rounded-lg hover:bg-pink-600 transition-colors text-sm"
+                  >
+                    前往设置
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 诊断工具 */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-blue-900">遇到问题？</h3>
+                  <p className="text-sm text-blue-700">使用诊断工具检查配置和权限</p>
+                </div>
+                <button
+                  onClick={() => setShowDiagnostic(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm flex items-center gap-2"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  诊断问题
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-100 flex items-center justify-center">
@@ -151,6 +262,18 @@ const AnniversaryPage: React.FC = () => {
           <p className="text-gray-600">加载纪念日中...</p>
         </div>
       </div>
+    );
+  }
+
+  // 如果设置未完成，显示设置引导
+  if (!setupStatus.isReady) {
+    return (
+      <>
+        <SetupGuide />
+        {showDiagnostic && (
+          <FirebaseDiagnostic onClose={() => setShowDiagnostic(false)} />
+        )}
+      </>
     );
   }
 
@@ -170,7 +293,82 @@ const AnniversaryPage: React.FC = () => {
         {/* 错误提示 */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
+            <div className="flex flex-col space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2" />
+                  <span className="font-medium">纪念日功能遇到问题</span>
+                </div>
+                <button
+                  onClick={() => setShowDiagnostic(true)}
+                  className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors flex items-center gap-1"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  诊断问题
+                </button>
+              </div>
+              
+              <div className="text-sm">
+                <p className="mb-2"><strong>错误详情：</strong>{error}</p>
+                
+                {/* 根据错误类型提供具体建议 */}
+                {error.includes('权限不足') && (
+                  <div className="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                    <p className="font-medium mb-1">可能的解决方案：</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>检查 Firebase 项目的 Firestore 安全规则配置</li>
+                      <li>确保您已正确登录并属于一个情侣关系</li>
+                      <li>联系管理员检查数据库权限设置</li>
+                    </ul>
+                  </div>
+                )}
+                
+                {error.includes('索引缺失') && (
+                  <div className="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                    <p className="font-medium mb-1">需要创建数据库索引：</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>为 anniversaries 集合创建复合索引 (coupleId, date)</li>
+                      <li>索引创建可能需要几分钟时间</li>
+                      <li>请参考项目根目录的 FIREBASE_SETUP.md 文件</li>
+                    </ul>
+                  </div>
+                )}
+                
+                {error.includes('网络连接') && (
+                  <div className="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                    <p className="font-medium mb-1">网络连接问题：</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>检查您的网络连接是否正常</li>
+                      <li>确认 Firebase 服务状态</li>
+                      <li>尝试刷新页面重新连接</li>
+                    </ul>
+                  </div>
+                )}
+                
+                {error.includes('未认证') && (
+                  <div className="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                    <p className="font-medium mb-1">用户认证问题：</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>请重新登录您的账户</li>
+                      <li>检查登录状态是否过期</li>
+                      <li>清除浏览器缓存后重试</li>
+                    </ul>
+                  </div>
+                )}
+                
+                {!error.includes('权限不足') && !error.includes('索引缺失') && !error.includes('网络连接') && !error.includes('未认证') && (
+                  <div className="bg-red-50 p-3 rounded border-l-4 border-red-400">
+                    <p className="font-medium mb-1">通用解决方案：</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>点击"诊断问题"按钮获取详细分析</li>
+                      <li>检查浏览器控制台的详细错误信息</li>
+                      <li>尝试刷新页面重新加载</li>
+                      <li>如问题持续，请联系技术支持</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -263,6 +461,11 @@ const AnniversaryPage: React.FC = () => {
               />
             </div>
           </div>
+        )}
+
+        {/* Firebase诊断工具 */}
+        {showDiagnostic && (
+          <FirebaseDiagnostic onClose={() => setShowDiagnostic(false)} />
         )}
       </div>
     </div>

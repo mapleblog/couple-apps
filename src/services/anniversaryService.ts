@@ -37,9 +37,21 @@ export const anniversaryService = {
       });
       
       return anniversaries;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取纪念日失败:', error);
-      throw new Error('获取纪念日失败');
+      
+      // 提供更具体的错误信息
+      if (error.code === 'permission-denied') {
+        throw new Error('权限不足：无法访问纪念日数据。请检查数据库权限设置。');
+      } else if (error.code === 'failed-precondition') {
+        throw new Error('数据库索引缺失：需要为 anniversaries 集合创建复合索引 (coupleId, date)。');
+      } else if (error.code === 'unavailable') {
+        throw new Error('网络连接问题：无法连接到数据库，请检查网络连接。');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('用户未认证：请重新登录后再试。');
+      } else {
+        throw new Error(`获取纪念日失败：${error.message || '未知错误'}`);
+      }
     }
   },
 
@@ -65,9 +77,18 @@ export const anniversaryService = {
 
       const docRef = await addDoc(collection(db, COLLECTION_NAME), anniversaryData);
       return docRef.id;
-    } catch (error) {
+    } catch (error: any) {
       console.error('添加纪念日失败:', error);
-      throw new Error('添加纪念日失败');
+      
+      if (error.code === 'permission-denied') {
+        throw new Error('权限不足：无法添加纪念日。请确保已正确创建情侣档案并部署了数据库安全规则。');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('用户未认证：请重新登录后再试。');
+      } else if (error.code === 'unavailable') {
+        throw new Error('网络连接问题：无法连接到数据库，请检查网络连接。');
+      } else {
+        throw new Error(`添加纪念日失败：${error.message || '未知错误'}`);
+      }
     }
   },
 
@@ -91,9 +112,18 @@ export const anniversaryService = {
       if (data.reminderDays !== undefined) updateData.reminderDays = data.reminderDays;
 
       await updateDoc(docRef, updateData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('更新纪念日失败:', error);
-      throw new Error('更新纪念日失败');
+      
+      if (error.code === 'permission-denied') {
+        throw new Error('权限不足：无法更新纪念日。请确保您有权限修改此纪念日。');
+      } else if (error.code === 'not-found') {
+        throw new Error('纪念日不存在：要更新的纪念日已被删除或不存在。');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('用户未认证：请重新登录后再试。');
+      } else {
+        throw new Error(`更新纪念日失败：${error.message || '未知错误'}`);
+      }
     }
   },
 
@@ -102,9 +132,18 @@ export const anniversaryService = {
     try {
       const docRef = doc(db, COLLECTION_NAME, anniversaryId);
       await deleteDoc(docRef);
-    } catch (error) {
+    } catch (error: any) {
       console.error('删除纪念日失败:', error);
-      throw new Error('删除纪念日失败');
+      
+      if (error.code === 'permission-denied') {
+        throw new Error('权限不足：无法删除纪念日。请确保您有权限删除此纪念日。');
+      } else if (error.code === 'not-found') {
+        throw new Error('纪念日不存在：要删除的纪念日已被删除或不存在。');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('用户未认证：请重新登录后再试。');
+      } else {
+        throw new Error(`删除纪念日失败：${error.message || '未知错误'}`);
+      }
     }
   },
 
@@ -122,9 +161,18 @@ export const anniversaryService = {
       }
       
       return null;
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取纪念日详情失败:', error);
-      throw new Error('获取纪念日详情失败');
+      
+      if (error.code === 'permission-denied') {
+        throw new Error('权限不足：无法访问纪念日详情。请检查数据库权限设置。');
+      } else if (error.code === 'unauthenticated') {
+        throw new Error('用户未认证：请重新登录后再试。');
+      } else if (error.code === 'unavailable') {
+        throw new Error('网络连接问题：无法连接到数据库，请检查网络连接。');
+      } else {
+        throw new Error(`获取纪念日详情失败：${error.message || '未知错误'}`);
+      }
     }
   },
 

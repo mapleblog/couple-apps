@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 用户文档规则
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // 情侣文档规则
+    match /couples/{coupleId} {
+      allow read, write: if request.auth != null && 
+        (request.auth.uid == resource.data.user1Id || 
+         request.auth.uid == resource.data.user2Id ||
+         request.auth.uid == request.resource.data.user1Id ||
+         request.auth.uid == request.resource.data.user2Id);
+    }
+    
+    // 纪念日集合规则
+    match /anniversaries/{anniversaryId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user2Id);
+      
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user2Id) &&
+        request.resource.data.createdBy == request.auth.uid;
+    }
+    
+    // 照片集合规则
+    match /photos/{photoId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user2Id);
+      
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user2Id) &&
+        request.resource.data.uploadedBy == request.auth.uid;
+    }
+    
+    // 消息集合规则
+    match /messages/{messageId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user2Id);
+      
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user2Id) &&
+        request.resource.data.senderId == request.auth.uid;
+    }
+    
+    // 愿望清单集合规则
+    match /wishes/{wishId} {
+      allow read, write: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user2Id);
+      
+      allow create: if request.auth != null && 
+        exists(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)) &&
+        (request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user1Id ||
+         request.auth.uid == get(/databases/$(database)/documents/couples/$(request.resource.data.coupleId)).data.user2Id) &&
+        request.resource.data.createdBy == request.auth.uid;
+    }
+    
+    // 默认拒绝所有其他访问
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
