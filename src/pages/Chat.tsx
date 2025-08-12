@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Smile, Image, MoreVertical, Phone, Video, ArrowLeft } from 'lucide-react';
+import { Send, Smile, Image, MoreVertical, Phone, Video, ArrowLeft, Home } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 // import { useCoupleContext } from '../contexts/CoupleContext';
@@ -347,9 +347,10 @@ const Chat: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-all duration-200 group"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium hidden sm:inline">返回主页</span>
             </button>
             <img
               src={partner.avatar}
@@ -374,9 +375,18 @@ const Chat: React.FC = () => {
             </div>
           </div>
           
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <MoreVertical className="w-5 h-5 text-gray-600" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg transition-all duration-200"
+            >
+              <Home className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline">主页</span>
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <MoreVertical className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
         </div>
       </div>
 

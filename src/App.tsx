@@ -12,6 +12,7 @@ import Photos from './pages/Photos';
 import Chat from './pages/Chat';
 import Wishlist from './pages/Wishlist';
 import Settings from './pages/Settings';
+import FirebaseDebugTool from './components/FirebaseDebugTool';
 import './index.css';
 
 function App() {
@@ -105,6 +106,16 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Firebase诊断工具 */}
+              <Route 
+                path="/debug" 
+                element={
+                  <ProtectedRoute>
+                    <FirebaseDebugTool />
                   </ProtectedRoute>
                 } 
               />

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCouple } from '../contexts/CoupleContext';
 import { Photo, PhotoContextType, PhotoUploadData } from '../types';
@@ -10,7 +11,7 @@ import {
 } from '../services/photoService';
 import PhotoUpload from '../components/PhotoUpload';
 import PhotoCard from '../components/PhotoCard';
-import { ImageIcon, Upload, Heart, Loader2 } from 'lucide-react';
+import { ImageIcon, Upload, Heart, Loader2, Home, ArrowLeft } from 'lucide-react';
 
 // Empty状态组件
 interface EmptyProps {
@@ -173,34 +174,56 @@ const PhotoGrid: React.FC = () => {
 // 照片页面头部
 const PhotosHeader: React.FC<{ onUploadClick: () => void }> = ({ onUploadClick }) => {
   const { photos, uploading } = usePhotoContext();
+  const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center space-x-3">
-        <div className="p-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg">
-          <ImageIcon className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">照片相册</h1>
-          <p className="text-gray-600">
-            共 {photos.length} 张照片
-            <Heart className="inline w-4 h-4 ml-1 text-pink-500 animate-pulse" />
-          </p>
-        </div>
+    <div className="mb-6">
+      {/* 返回按钮 */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-white/50 rounded-lg transition-all duration-200 group"
+        >
+          <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium">返回主页</span>
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white text-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+        >
+          <Home className="h-5 w-5" />
+          <span className="hidden sm:inline font-medium">主页</span>
+        </button>
       </div>
       
-      <button
-        onClick={onUploadClick}
-        disabled={uploading}
-        className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {uploading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <Upload className="w-4 h-4" />
-        )}
-        <span>{uploading ? '上传中...' : '上传照片'}</span>
-      </button>
+      {/* 页面标题和上传按钮 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg">
+            <ImageIcon className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">照片相册</h1>
+            <p className="text-gray-600">
+              共 {photos.length} 张照片
+              <Heart className="inline w-4 h-4 ml-1 text-pink-500 animate-pulse" />
+            </p>
+          </div>
+        </div>
+        
+        <button
+          onClick={onUploadClick}
+          disabled={uploading}
+          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {uploading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Upload className="w-4 h-4" />
+          )}
+          <span>{uploading ? '上传中...' : '上传照片'}</span>
+        </button>
+      </div>
     </div>
   );
 };

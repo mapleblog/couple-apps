@@ -3,6 +3,7 @@ import { Heart, MoreVertical, Edit3, Trash2, Tag, Calendar, User, X } from 'luci
 import { Photo } from '../types';
 import { usePhotoContext } from '../pages/Photos';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../services/firebase';
 import { formatDistanceToNow } from 'date-fns';
 
 interface PhotoCardProps {
@@ -11,6 +12,7 @@ interface PhotoCardProps {
 
 const PhotoCard: React.FC<PhotoCardProps> = ({ photo }) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -59,7 +61,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo }) => {
     >
       {/* 照片容器 */}
       <div className="relative aspect-square overflow-hidden">
-        {isInView && (
+        {isInView && !hasError && (
           <img
             ref={imgRef}
             src={photo.thumbnailUrl || photo.url}
@@ -68,14 +70,45 @@ const PhotoCard: React.FC<PhotoCardProps> = ({ photo }) => {
               isLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
             }`}
             onLoad={() => setIsLoaded(true)}
+            onError={(e) => {
+              console.group('🚨 图片加载失败详细信息');
+              console.error('URL:', photo.url);
+              console.error('Photo ID:', photo.id);
+              console.error('Upload Time:', photo.uploadedAt);
+              console.error('Error Event:', e);
+              console.error('Current User:', auth.currentUser?.uid);
+              console.error('Storage Bucket:', import.meta.env.VITE_FIREBASE_STORAGE_BUCKET);
+              console.groupEnd();
+              setHasError(true);
+              setIsLoaded(false);
+            }}
             loading="lazy"
           />
         )}
         
         {/* 加载占位符 */}
-        {!isLoaded && (
+        {!isLoaded && !hasError && (
           <div className="absolute inset-0 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
             <div className="w-8 h-8 border-2 border-pink-300 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+        
+        {/* 错误占位符 */}
+        {hasError && (
+          <div className="absolute inset-0 bg-gradient-to-br from-red-100 to-pink-100 flex flex-col items-center justify-center text-red-600">
+            <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <p className="text-sm text-center px-2">图片加载失败</p>
+            <button 
+              onClick={() => {
+                setHasError(false);
+                setIsLoaded(false);
+              }}
+              className="mt-2 text-xs text-red-500 hover:text-red-700 underline"
+            >
+              重试
+            </button>
           </div>
         )}
         

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Star, Target, Calendar, Gift } from 'lucide-react';
+import { Plus, Search, Filter, Star, Target, Calendar, Gift, Home, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useCouple } from '../contexts/CoupleContext';
 import { wishlistService } from '../services/wishlistService';
@@ -10,6 +11,7 @@ import WishCard from '../components/WishCard';
 const WishlistPage: React.FC = () => {
   const { user } = useAuth();
   const { couple } = useCouple();
+  const navigate = useNavigate();
   const [wishes, setWishes] = useState<WishItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,13 +186,34 @@ const WishlistPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         {/* 页面标题 */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Gift className="h-8 w-8 text-pink-500 mr-2 animate-pulse" />
-            <h1 className="text-3xl font-bold text-gray-800">愿望清单</h1>
-            <Gift className="h-8 w-8 text-pink-500 ml-2 animate-pulse" />
+        <div className="mb-8">
+          {/* 返回按钮 */}
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-white/50 rounded-lg transition-all duration-200 group"
+            >
+              <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="font-medium">返回主页</span>
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white text-gray-700 rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+            >
+              <Home className="h-5 w-5" />
+              <span className="hidden sm:inline font-medium">主页</span>
+            </button>
           </div>
-          <p className="text-gray-600">记录我们的美好愿望</p>
+          
+          {/* 标题区域 */}
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-4">
+              <Gift className="h-8 w-8 text-pink-500 mr-2 animate-pulse" />
+              <h1 className="text-3xl font-bold text-gray-800">愿望清单</h1>
+              <Gift className="h-8 w-8 text-pink-500 ml-2 animate-pulse" />
+            </div>
+            <p className="text-gray-600">记录我们的美好愿望</p>
+          </div>
         </div>
 
         {/* 统计卡片 */}

@@ -20,7 +20,7 @@ import { db, storage } from './firebase';
 import { Photo, PhotoUploadData } from '../types';
 
 const PHOTOS_COLLECTION = 'photos';
-const STORAGE_PATH = 'photos';
+const STORAGE_PATH = 'couples'; // 匹配 storage.rules 中的路径结构
 
 // 生成缩略图URL（这里使用简单的URL参数，实际项目中可能需要更复杂的缩略图生成）
 const generateThumbnailUrl = (originalUrl: string): string => {
@@ -80,10 +80,12 @@ export const uploadPhoto = async (
     // 压缩图片
     const compressedFile = await compressImage(data.file);
     
-    // 生成唯一文件名
+    // 生成唯一文件名（使用安全的字符，避免URL编码问题）
     const timestamp = Date.now();
-    const fileName = `${timestamp}_${data.file.name}`;
-    const filePath = `${STORAGE_PATH}/${coupleId}/${fileName}`;
+    const randomId = Math.random().toString(36).substr(2, 9);
+    const fileExtension = data.file.type.split('/')[1];
+    const safeFileName = `${timestamp}_${randomId}.${fileExtension}`;
+    const filePath = `${STORAGE_PATH}/${coupleId}/photos/${safeFileName}`;
     
     // 上传到 Firebase Storage
     const storageRef = ref(storage, filePath);
@@ -149,9 +151,14 @@ export const getCouplePhotos = async (coupleId: string): Promise<Photo[]> => {
 // 删除照片
 export const deletePhoto = async (photoId: string, photoUrl: string): Promise<void> => {
   try {
-    // 从 Storage 删除文件
-    const storageRef = ref(storage, photoUrl);
-    await deleteObject(storageRef);
+    // 从 Storage URL 中提取文件路径
+    const url = new URL(photoUrl);
+    const pathMatch = url.pathname.match(/\/o\/(.*?)\?/);
+    if (pathMatch) {
+      const filePath = decodeURIComponent(pathMatch[1]);
+      const storageRef = ref(storage, filePath);
+      await deleteObject(storageRef);
+    }
     
     // 从 Firestore 删除文档
     await deleteDoc(doc(db, PHOTOS_COLLECTION, photoId));
