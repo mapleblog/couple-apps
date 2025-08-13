@@ -66,13 +66,38 @@ export async function getCouple(coupleId: string): Promise<Couple | null> {
 // 根据用户ID获取情侣档案
 export async function getCoupleByUserId(userId: string): Promise<Couple | null> {
   try {
+    console.log('🔍 coupleService.getCoupleByUserId 开始执行');
+    console.log('👤 查询的userId:', userId);
+    
     const userDoc = await getDoc(doc(db, 'users', userId));
-    if (userDoc.exists() && userDoc.data().coupleId) {
-      return await getCouple(userDoc.data().coupleId);
+    console.log('📄 用户文档存在:', userDoc.exists());
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      console.log('👤 用户数据:', userData);
+      console.log('👫 用户的coupleId:', userData.coupleId);
+      
+      if (userData.coupleId) {
+        console.log('📡 正在获取情侣档案，coupleId:', userData.coupleId);
+        const couple = await getCouple(userData.coupleId);
+        console.log('✅ 获取到的情侣档案:', couple);
+        return couple;
+      } else {
+        console.log('❌ 用户没有关联的coupleId');
+      }
+    } else {
+      console.log('❌ 用户文档不存在');
     }
+    
     return null;
   } catch (error) {
-    console.error('根据用户ID获取情侣档案失败:', error);
+    console.error('❌ coupleService.getCoupleByUserId 失败:', error);
+    console.error('错误详情:', {
+      message: error instanceof Error ? error.message : '未知错误',
+      code: (error as any)?.code,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId
+    });
     return null;
   }
 }

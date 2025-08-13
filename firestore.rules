@@ -58,7 +58,7 @@ service cloud.firestore {
     }
     
     // 愿望清单集合规则
-    match /wishes/{wishId} {
+    match /wishlist/{wishId} {
       allow read, write: if request.auth != null && 
         exists(/databases/$(database)/documents/couples/$(resource.data.coupleId)) &&
         (request.auth.uid == get(/databases/$(database)/documents/couples/$(resource.data.coupleId)).data.user1Id ||

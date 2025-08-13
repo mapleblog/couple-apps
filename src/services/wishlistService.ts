@@ -20,25 +20,49 @@ export const wishlistService = {
   // 获取情侣的所有愿望
   async getWishes(coupleId: string): Promise<WishItem[]> {
     try {
+      console.log('🔍 wishlistService.getWishes 开始执行');
+      console.log('📋 集合名称:', COLLECTION_NAME);
+      console.log('👫 查询的coupleId:', coupleId);
+      console.log('🔥 Firestore实例:', db);
+      
+      // 暂时移除orderBy排序，避免需要复合索引（索引构建中）
       const q = query(
         collection(db, COLLECTION_NAME),
-        where('coupleId', '==', coupleId),
-        orderBy('createdAt', 'desc')
+        where('coupleId', '==', coupleId)
       );
       
+      console.log('📡 执行Firestore查询...');
       const querySnapshot = await getDocs(q);
+      console.log('📊 查询结果大小:', querySnapshot.size);
+      
       const wishes: WishItem[] = [];
       
       querySnapshot.forEach((doc) => {
+        console.log('📄 处理文档:', doc.id, doc.data());
         wishes.push({
           id: doc.id,
           ...doc.data()
         } as WishItem);
       });
       
-      return wishes;
+      // 在前端进行排序，按创建时间降序
+      const sortedWishes = wishes.sort((a, b) => {
+        const timeA = a.createdAt?.toDate?.()?.getTime() || 0;
+        const timeB = b.createdAt?.toDate?.()?.getTime() || 0;
+        return timeB - timeA;
+      });
+      
+      console.log('✅ 成功获取愿望清单，数量:', sortedWishes.length);
+      return sortedWishes;
     } catch (error) {
-      console.error('获取愿望清单失败:', error);
+      console.error('❌ wishlistService.getWishes 失败:', error);
+      console.error('错误详情:', {
+        message: error instanceof Error ? error.message : '未知错误',
+        code: (error as any)?.code,
+        stack: error instanceof Error ? error.stack : undefined,
+        coupleId,
+        collectionName: COLLECTION_NAME
+      });
       throw new Error('获取愿望清单失败');
     }
   },

@@ -26,7 +26,11 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
 
   // 加载情侣档案数据
   const loadCoupleData = async () => {
+    console.log('🔍 CoupleContext: 开始加载情侣档案数据');
+    console.log('👤 当前用户:', user);
+    
     if (!user) {
+      console.log('❌ CoupleContext: 用户未登录，停止加载');
       setLoading(false);
       return;
     }
@@ -34,33 +38,47 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
     try {
       setLoading(true);
       setError(null);
+      console.log('📡 CoupleContext: 正在获取情侣档案，userId:', user.uid);
 
       // 获取情侣档案
       const coupleData = await getCoupleByUserId(user.uid);
+      console.log('👫 CoupleContext: 获取到的情侣档案:', coupleData);
       setCouple(coupleData);
 
       if (coupleData) {
+        console.log('✅ CoupleContext: 情侣档案存在，ID:', coupleData.id);
+        
         // 获取伴侣信息
         const partnerData = await getPartner(coupleData, user.uid);
+        console.log('👥 CoupleContext: 获取到的伴侣信息:', partnerData);
         setPartner(partnerData);
 
         // 计算在一起天数
         const days = calculateDaysTogether(coupleData.relationshipStart);
+        console.log('📅 CoupleContext: 在一起天数:', days);
         setDaysTogetherCount(days);
 
         // 获取今日纪念日
         const anniversaries = await getTodayAnniversaries(coupleData.id, coupleData);
+        console.log('🎉 CoupleContext: 今日纪念日:', anniversaries);
         setTodayAnniversaries(anniversaries);
       } else {
+        console.log('❌ CoupleContext: 未找到情侣档案');
         setPartner(null);
         setDaysTogetherCount(0);
         setTodayAnniversaries([]);
       }
     } catch (err) {
-      console.error('加载情侣档案数据失败:', err);
+      console.error('❌ CoupleContext: 加载情侣档案数据失败:', err);
+      console.error('错误详情:', {
+        message: err instanceof Error ? err.message : '未知错误',
+        stack: err instanceof Error ? err.stack : undefined,
+        userId: user?.uid
+      });
       setError(err instanceof Error ? err.message : '加载数据失败');
     } finally {
       setLoading(false);
+      console.log('🏁 CoupleContext: 数据加载完成');
     }
   };
 
