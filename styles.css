@@ -1,0 +1,38 @@
+/* 基础样式 */
+body {
+    font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;
+}
+
+/* 主容器样式 */
+.main-container {
+    background-color: #22111a;
+}
+
+/* 背景图片样式 */
+.hero-background {
+    background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBCVImMT4o4mF43LGDerfPlaUCkjKvnpJjGGeTsfsognd_2mRYz2wYmOt922JD2EGRDwKL1l0dFmUQyT74L1vfPq0h_Sa99BDNm7zi3BeMumBmQW8TSZgnjcLuCvFqyNQ11CrJTVkoClSalmxA5krWlfiBeGiGq5k4FSm9rM9AdN-NH6f4TeFwXESB_AG8UMxdp-7o5CoJUQFlWV3MFlxAppu_vix2zJHxExxi6-04hQmv8GLOoPb_4qTsio5gOuZXn3sU4yPo4JmY");
+}
+
+.music-avatar {
+    background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC8kh5qFdtaIwsKYu1aGFThZkUNEbn8LMR52wjBjVz_xM0k3S950v65JA0O9n1DeqH6MROr_j4LwE7JcscxbLZ7YZ3uzG6GNp2CMsvMZhVCNzU4J60bZuugdn6odm6ygGobOGze9gjmYozlCszDua9IvW0Hh2EdEE3t_6Dn6hO68s5CzTN4qSxnufHgSXZXJtfIFQvhLK5comWMNJ9Ebx0rvGLbWeuW7lZ5zy-kpB-tcqfdDDHKC8wac3f7rJQiyXnnyOU8HeDnGsk");
+}
+
+.profile-clara {
+    background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDDFEh2_lpqJ6c5OwPWpHUc8zhYdAFRceuMlDzYOexLdkI2G-bG8K5fsp7QPdHMpN78vXWJwypL-y5zXIxfgm6v6GMBlLuumf0o3zrlVnT4JqrNpK39OrCWcpiOwzOU6X5BkN4v25Gh661CEoC-LjaKXPzRm41wktpC8fFm8yhwbkvIQZKowIawOfsM_d5B21z8pIUxcIozpTP-rBt81NLehvJroV7CZsegyRqETYcDmM6ck5tkOxEgB2nqKWQ1rLfX0FPHWXqPTUE");
+}
+
+.profile-ethan {
+    background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCNyEjpWz9tNfcXaNe0WSS63T9Y9oDpnW8xvCPQhAqhLWz-Xb3h6E1chtAKqj59ZdjSBXXba-w5jBFBw-4baVAP9BE1Z-D4GcX2wbU7nLIh3G-AO1RKPsxcdyxs6te2eJvDYOsN4R7JdQAt-TYGAp7m7uHC8YQb_Sre1fski5aSGw_SqjnnBKOSYopck29LnsWn3D8RHu87SRbVn62QDBhKkios80hT3306dst0VrhfhGje_kIv5XDIqqR8QqDmGxB-2cuRuoeqtCU");
+}
+
+.video-background {
+    background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAD0cUhOsIIeJk-N9IKKMFEMUTv72U4jHPD-_XgzW3DC_kbDsw2dg49iEYAmEp4CiJbwmz_ZYcTDjafi77SHUdX31fCDHZghS1fEFSzXeF14lwiAHubjxQVTf4Zem7GiKf0TmHqAEQudDIg6RRPXO1CJsBPzH4UhR0K-u38wWL_DZHgF7j01gHLfWeKzB_cxgispbi9mDwI0G52CXfWNsdhu9ucArV_UODxUYZRIyEYbcswF1_QyPWjc0x_UW9Y-Mo3AiCt9hgwtqg");
+}
+
+.love-note-1 {
+    background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%, rgba(0, 0, 0, 0.1) 100%, rgba(0, 0, 0, 0) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuAW3rK3oSTYMXqX2pDddwkNTVAnvDMs-EGeC39E91KbDZ-4mbFsgzb_gB9LMoWyqyxwePkxq14u6BeAtAxpD4WFCPoYtPSuS1OQlOhWFyUF-4IZpCK2BtOPooDYiheJ7LR3-0XN8sDtiBD6eeSBwS0MFjtJ9JYhH2MlMCPq_eSuJI_Dfjq1jHHPv_OTyhq_VUlc8jKG54oqyYZElipb9ZHQRx3R-pEHKU7z2LhJd_7WyEIVA9HCUD-Qs6tyJcV1oOoI4oCUnGSOcyY");
+}
+
+.love-note-2 {
+    background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%, rgba(0, 0, 0, 0.1) 100%, rgba(0, 0, 0, 0) 100%), url("undefined");
+}
