@@ -1,14 +1,14 @@
-/* 基础样式 */
+/* Base styles */
 body {
     font-family: "Plus Jakarta Sans", "Noto Sans", sans-serif;
 }
 
-/* 主容器样式 */
+/* Main container styles */
 .main-container {
     background-color: #22111a;
 }
 
-/* 背景图片样式 */
+/* Background image styles */
 .hero-background {
     background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBCVImMT4o4mF43LGDerfPlaUCkjKvnpJjGGeTsfsognd_2mRYz2wYmOt922JD2EGRDwKL1l0dFmUQyT74L1vfPq0h_Sa99BDNm7zi3BeMumBmQW8TSZgnjcLuCvFqyNQ11CrJTVkoClSalmxA5krWlfiBeGiGq5k4FSm9rM9AdN-NH6f4TeFwXESB_AG8UMxdp-7o5CoJUQFlWV3MFlxAppu_vix2zJHxExxi6-04hQmv8GLOoPb_4qTsio5gOuZXn3sU4yPo4JmY");
 }
@@ -17,7 +17,7 @@ body {
     background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC8kh5qFdtaIwsKYu1aGFThZkUNEbn8LMR52wjBjVz_xM0k3S950v65JA0O9n1DeqH6MROr_j4LwE7JcscxbLZ7YZ3uzG6GNp2CMsvMZhVCNzU4J60bZuugdn6odm6ygGobOGze9gjmYozlCszDua9IvW0Hh2EdEE3t_6Dn6hO68s5CzTN4qSxnufHgSXZXJtfIFQvhLK5comWMNJ9Ebx0rvGLbWeuW7lZ5zy-kpB-tcqfdDDHKC8wac3f7rJQiyXnnyOU8HeDnGsk");
 }
 
-/* 原来的profile-clara和profile-ethan类已移除，现在使用img元素直接显示头像 */
+/* Original profile-clara and profile-ethan classes removed, now using img elements to display avatars directly */
 
 .video-background {
     background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAD0cUhOsIIeJk-N9IKKMFEMUTv72U4jHPD-_XgzW3DC_kbDsw2dg49iEYAmEp4CiJbwmz_ZYcTDjafi77SHUdX31fCDHZghS1fEFSzXeF14lwiAHubjxQVTf4Zem7GiKf0TmHqAEQudDIg6RRPXO1CJsBPzH4UhR0K-u38wWL_DZHgF7j01gHLfWeKzB_cxgispbi9mDwI0G52CXfWNsdhu9ucArV_UODxUYZRIyEYbcswF1_QyPWjc0x_UW9Y-Mo3AiCt9hgwtqg");

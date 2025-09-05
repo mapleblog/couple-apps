@@ -1,22 +1,22 @@
-# 音乐文件夹
+# Music Folder
 
-这个文件夹用于存放音乐播放器的音频文件。
+This folder is used to store audio files for the music player.
 
-## 需要的音频文件：
+## Required Audio Files:
 
-1. **romantic.mp3** - 浪漫音乐
-2. **love.mp3** - 爱情歌曲  
-3. **together.mp3** - 相伴永远
+1. **romantic.mp3** - Romantic music
+2. **love.mp3** - Love songs
+3. **together.mp3** - Together forever
 
-## 使用说明：
+## Usage Instructions:
 
-请将您的音频文件重命名为上述文件名，并放置在此文件夹中。
-音乐播放器会自动加载这些文件。
+Please rename your audio files to the above file names and place them in this folder.
+The music player will automatically load these files.
 
-支持的音频格式：MP3, WAV, OGG
+Supported audio formats: MP3, WAV, OGG
 
-## 注意事项：
+## Notes:
 
-- 确保音频文件路径正确
-- 建议音频文件大小不超过10MB以获得更好的加载性能
-- 如果某个音频文件不存在，播放器会自动跳到下一首歌曲
+- Ensure audio file paths are correct
+- Recommend audio file size not exceed 10MB for better loading performance
+- If an audio file does not exist, the player will automatically skip to the next song
