@@ -539,6 +539,7 @@ class LoveNotesManager {
         this.selectedColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         this.currentPage = 1;
         this.itemsPerPage = 4;
+        this.totalPages = 1;
         this.init();
     }
     
@@ -655,131 +656,7 @@ class LoveNotesManager {
         });
     }
     
-    bindPaginationEvents() {
-        // Find pagination container
-        const paginationContainer = document.querySelector('.flex.items-center.justify-center.p-4');
-        if (!paginationContainer) {
-            console.error('Pagination container not found');
-            return;
-        }
-        
-        // Get pagination elements
-        const prevBtn = paginationContainer.querySelector('a[href="#"]:first-child');
-        const nextBtn = paginationContainer.querySelector('a[href="#"]:last-child');
-        const pageNumbers = paginationContainer.querySelectorAll('a[href="#"]:not(:first-child):not(:last-child)');
-        
-        // Previous button
-        if (prevBtn) {
-            prevBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.goToPreviousPage();
-            });
-        }
-        
-        // Next button
-        if (nextBtn) {
-            nextBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.goToNextPage();
-            });
-        }
-        
-        // Page number buttons
-        pageNumbers.forEach((btn, index) => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.goToPage(index + 1);
-            });
-        });
-    }
-    
-    getTotalPages() {
-        return Math.ceil(this.notes.length / this.itemsPerPage);
-    }
-    
-    goToPage(page) {
-        const totalPages = this.getTotalPages();
-        if (page < 1 || page > totalPages) {
-            return;
-        }
-        
-        this.currentPage = page;
-        this.renderNotes();
-        this.updatePaginationUI();
-    }
-    
-    goToPreviousPage() {
-        if (this.currentPage > 1) {
-            this.goToPage(this.currentPage - 1);
-        }
-    }
-    
-    goToNextPage() {
-        const totalPages = this.getTotalPages();
-        if (this.currentPage < totalPages) {
-            this.goToPage(this.currentPage + 1);
-        }
-    }
-    
-    updatePaginationUI() {
-        const paginationContainer = document.querySelector('.flex.items-center.justify-center.p-4');
-        if (!paginationContainer) {
-            return;
-        }
-        
-        const totalPages = this.getTotalPages();
-        const prevBtn = paginationContainer.querySelector('a[href="#"]:first-child');
-        const nextBtn = paginationContainer.querySelector('a[href="#"]:last-child');
-        const pageNumbers = paginationContainer.querySelectorAll('a[href="#"]:not(:first-child):not(:last-child)');
-        
-        // Update previous button state
-        if (prevBtn) {
-            if (this.currentPage <= 1) {
-                prevBtn.style.opacity = '0.5';
-                prevBtn.style.pointerEvents = 'none';
-            } else {
-                prevBtn.style.opacity = '1';
-                prevBtn.style.pointerEvents = 'auto';
-            }
-        }
-        
-        // Update next button state
-        if (nextBtn) {
-            if (this.currentPage >= totalPages) {
-                nextBtn.style.opacity = '0.5';
-                nextBtn.style.pointerEvents = 'none';
-            } else {
-                nextBtn.style.opacity = '1';
-                nextBtn.style.pointerEvents = 'auto';
-            }
-        }
-        
-        // Update page numbers
-        pageNumbers.forEach((btn, index) => {
-            const pageNum = index + 1;
-            btn.textContent = pageNum;
-            
-            if (pageNum === this.currentPage) {
-                btn.className = 'text-sm font-bold leading-normal tracking-[0.015em] flex size-10 items-center justify-center text-white rounded-full bg-[#482336]';
-            } else {
-                btn.className = 'text-sm font-normal leading-normal flex size-10 items-center justify-center text-white rounded-full';
-            }
-            
-            // Hide page numbers beyond total pages
-            if (pageNum > totalPages) {
-                btn.style.display = 'none';
-            } else {
-                btn.style.display = 'flex';
-            }
-        });
-        
-        // Hide pagination if only one page or no notes
-        if (totalPages <= 1) {
-            paginationContainer.style.display = 'none';
-        } else {
-            paginationContainer.style.display = 'flex';
-        }
-    }
+
     
     showModal() {
         const modal = document.getElementById('loveNoteModal');
@@ -841,14 +718,12 @@ class LoveNotesManager {
         };
         
         this.notes.push(note);
-        
-        // Calculate if we need to go to the last page for the new note
-        const totalPages = this.getTotalPages();
-        if (totalPages > this.currentPage) {
-            this.currentPage = totalPages;
-        }
-        
         this.saveNotes();
+        
+        // Navigate to the last page to show the new note
+        this.calculateTotalPages();
+        this.currentPage = this.totalPages;
+        
         this.renderNotes();
         this.hideModal();
         
@@ -925,16 +800,14 @@ class LoveNotesManager {
         if (confirmed) {
             // Remove note from array
             this.notes = this.notes.filter(n => n.id !== noteId);
+            this.saveNotes();
             
             // Adjust current page if necessary
-            const totalPages = this.getTotalPages();
-            if (this.currentPage > totalPages && totalPages > 0) {
-                this.currentPage = totalPages;
-            } else if (totalPages === 0) {
-                this.currentPage = 1;
+            this.calculateTotalPages();
+            if (this.currentPage > this.totalPages && this.totalPages > 0) {
+                this.currentPage = this.totalPages;
             }
             
-            this.saveNotes();
             this.renderNotes();
             
             console.log('Love note deleted:', note);
@@ -942,9 +815,9 @@ class LoveNotesManager {
     }
     
     renderNotes() {
-        // Find the love notes container by looking for the container after the Love Notes heading
+        // Find the Love Notes container by looking for the container after the Love Notes heading
         const loveNotesHeading = document.querySelector('h2');
-        let notesContainer = null;
+        let container = null;
         
         // Find the next grid container after the Love Notes heading
         let currentElement = loveNotesHeading.parentElement.nextElementSibling;
@@ -952,34 +825,37 @@ class LoveNotesManager {
             if (currentElement.classList.contains('grid') && 
                 currentElement.classList.contains('gap-3') && 
                 currentElement.classList.contains('p-4')) {
-                notesContainer = currentElement;
+                container = currentElement;
                 break;
             }
             currentElement = currentElement.nextElementSibling;
         }
         
-        if (!notesContainer) {
+        if (!container) {
             console.error('Love notes container not found');
             return;
         }
         
-        // Clear existing user notes (keep original notes)
-        const userNotes = notesContainer.querySelectorAll('.user-note');
+        // Clear existing user notes but keep the invisible image
+        const userNotes = container.querySelectorAll('.user-note');
         userNotes.forEach(note => note.remove());
         
         // Calculate pagination
+        this.calculateTotalPages();
+        
+        // Get notes for current page
         const startIndex = (this.currentPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
         const currentPageNotes = this.notes.slice(startIndex, endIndex);
         
-        // Add user notes for current page before the invisible image element
-        const invisibleImg = notesContainer.querySelector('img.invisible');
+        // Render current page notes before the invisible image
+        const invisibleImg = container.querySelector('img.invisible');
         currentPageNotes.forEach(note => {
             const noteElement = this.createNoteElement(note);
             if (invisibleImg) {
-                notesContainer.insertBefore(noteElement, invisibleImg);
+                container.insertBefore(noteElement, invisibleImg);
             } else {
-                notesContainer.appendChild(noteElement);
+                container.appendChild(noteElement);
             }
         });
         
@@ -1085,6 +961,81 @@ class LoveNotesManager {
             this.notes = JSON.parse(savedNotes);
             this.renderNotes();
         }
+    }
+    
+    // Pagination methods
+    calculateTotalPages() {
+        this.totalPages = Math.max(1, Math.ceil(this.notes.length / this.itemsPerPage));
+        
+        // Adjust current page if it exceeds total pages
+        if (this.currentPage > this.totalPages) {
+            this.currentPage = this.totalPages;
+        }
+    }
+    
+    goToPage(pageNumber) {
+        if (pageNumber >= 1 && pageNumber <= this.totalPages) {
+            this.currentPage = pageNumber;
+            this.renderNotes();
+        }
+    }
+    
+    nextPage() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.renderNotes();
+        }
+    }
+    
+    prevPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.renderNotes();
+        }
+    }
+    
+    updatePaginationUI() {
+        const paginationContainer = document.getElementById('loveNotesPagination');
+        if (!paginationContainer) return;
+        
+        const prevBtn = paginationContainer.querySelector('#prevPageBtn');
+        const nextBtn = paginationContainer.querySelector('#nextPageBtn');
+        const pageInfo = paginationContainer.querySelector('#pageInfo');
+        
+        if (prevBtn) {
+            prevBtn.disabled = this.currentPage === 1;
+            prevBtn.classList.toggle('opacity-50', this.currentPage === 1);
+            prevBtn.classList.toggle('cursor-not-allowed', this.currentPage === 1);
+        }
+        
+        if (nextBtn) {
+            nextBtn.disabled = this.currentPage === this.totalPages;
+            nextBtn.classList.toggle('opacity-50', this.currentPage === this.totalPages);
+            nextBtn.classList.toggle('cursor-not-allowed', this.currentPage === this.totalPages);
+        }
+        
+        if (pageInfo) {
+            pageInfo.textContent = `${this.currentPage} / ${this.totalPages}`;
+        }
+        
+        // Hide pagination if only one page
+        paginationContainer.style.display = this.totalPages <= 1 ? 'none' : 'flex';
+    }
+    
+    bindPaginationEvents() {
+        // Wait for DOM to be ready, then bind events
+        setTimeout(() => {
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => this.prevPage());
+            }
+            
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => this.nextPage());
+            }
+        }, 100);
     }
 }
 
