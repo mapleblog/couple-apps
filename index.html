@@ -99,8 +99,24 @@
               </div>
             </div>
             <h1 class="text-white tracking-light text-[32px] font-bold leading-tight px-4 text-center pb-3 pt-6">We've been together</h1>
-            <h1 class="text-white tracking-light text-[32px] font-bold leading-tight px-4 text-center pb-3 pt-6">1,234 days</h1>
-            <p class="text-white text-base font-normal leading-normal pb-3 pt-1 px-4 text-center">Since 05.05.2025</p>
+            <!-- 天数计数器区块 - 左右布局 -->
+            <div class="flex flex-col sm:flex-row gap-2 pb-3 pt-6 px-4">
+              <div class="flex-1">
+                <h1 id="daysCounter1" class="text-white tracking-light text-[32px] font-bold leading-tight text-center">1,234 days</h1>
+              </div>
+              <div class="flex-1">
+                <h1 id="daysCounter2" class="text-white tracking-light text-[32px] font-bold leading-tight text-center">0 days</h1>
+              </div>
+            </div>
+            <!-- Since日期区块 - 左右布局 -->
+            <div class="flex flex-col sm:flex-row gap-2 pb-3 pt-1 px-4">
+              <div class="flex-1">
+                <p class="text-white text-base font-normal leading-normal text-center">Since 05.05.2025</p>
+              </div>
+              <div class="flex-1">
+                <p class="text-white text-base font-normal leading-normal text-center">Since 06.06.2025</p>
+              </div>
+            </div>
             <div class="flex flex-wrap items-center justify-center gap-6 p-4" id="calendarContainer">
               <div class="flex min-w-72 max-w-[336px] flex-1 flex-col gap-0.5">
                 <div class="flex items-center p-1 justify-between">

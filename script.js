@@ -471,16 +471,85 @@ class Calendar {
     }
 }
 
-// 页面加载完成后初始化音乐播放器和日历
+// 天数计算器类
+class DaysCounter {
+    constructor(elementId, startDateString) {
+        // 设置起始日期和对应的元素
+        this.startDate = new Date(startDateString);
+        this.counterElement = document.getElementById(elementId);
+        this.elementId = elementId;
+        
+        this.init();
+    }
+    
+    init() {
+        // 计算并更新天数显示
+        this.updateDaysCount();
+        
+        // 每天午夜更新一次天数（可选）
+        this.scheduleNextUpdate();
+    }
+    
+    calculateDays() {
+        const today = new Date();
+        const timeDifference = today.getTime() - this.startDate.getTime();
+        const daysDifference = Math.floor(timeDifference / (1000 * 3600 * 24));
+        
+        return Math.max(0, daysDifference); // 确保不返回负数
+    }
+    
+    formatNumber(num) {
+        // 使用逗号分隔数字格式
+        return num.toLocaleString();
+    }
+    
+    updateDaysCount() {
+        const days = this.calculateDays();
+        const formattedDays = this.formatNumber(days);
+        
+        if (this.counterElement) {
+            this.counterElement.textContent = `${formattedDays} days`;
+        }
+        
+        console.log(`${this.elementId} 天数已更新: ${formattedDays} days`);
+    }
+    
+    scheduleNextUpdate() {
+        // 计算到下一个午夜的毫秒数
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        
+        const msUntilMidnight = tomorrow.getTime() - now.getTime();
+        
+        // 在午夜时更新天数
+        setTimeout(() => {
+            this.updateDaysCount();
+            // 设置每24小时更新一次
+            setInterval(() => {
+                this.updateDaysCount();
+            }, 24 * 60 * 60 * 1000);
+        }, msUntilMidnight);
+    }
+}
+
+// 页面加载完成后初始化音乐播放器、日历和天数计算器
 document.addEventListener('DOMContentLoaded', function() {
     const musicPlayer = new MusicPlayer();
     const calendar = new Calendar();
     
+    // 创建两个天数计算器实例
+    const daysCounter1 = new DaysCounter('daysCounter1', '2025-05-05');
+    const daysCounter2 = new DaysCounter('daysCounter2', '2025-06-06');
+    
     // 将实例添加到全局作用域，便于调试
     window.musicPlayer = musicPlayer;
     window.calendar = calendar;
+    window.daysCounter1 = daysCounter1;
+    window.daysCounter2 = daysCounter2;
     
-    console.log('音乐播放器和日历已初始化');
+    console.log('音乐播放器、日历和两个天数计算器已初始化');
 });
 
 console.log('页面已加载完成');
