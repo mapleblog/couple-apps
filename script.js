@@ -532,10 +532,412 @@ class DaysCounter {
     }
 }
 
+// Love Notes Manager Class
+class LoveNotesManager {
+    constructor() {
+        this.notes = [];
+        this.selectedColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        this.init();
+    }
+    
+    init() {
+        // Load existing notes from localStorage
+        this.loadNotes();
+        
+        // Bind modal events
+        this.bindModalEvents();
+        
+        // Bind color selection events
+        this.bindColorEvents();
+        
+        // Bind form events
+        this.bindFormEvents();
+    }
+    
+    bindModalEvents() {
+        const addNoteBtn = document.getElementById('addNoteBtn');
+        const modal = document.getElementById('loveNoteModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const emojiBtn = document.getElementById('emojiBtn');
+        const emojiPicker = document.getElementById('emojiPicker');
+        const emojiOptions = document.querySelectorAll('.emoji-option');
+        const noteContent = document.getElementById('noteContent');
+        
+        // Show modal
+        addNoteBtn.addEventListener('click', () => {
+            this.showModal();
+        });
+        
+        // Hide modal
+        closeModalBtn.addEventListener('click', () => {
+            this.hideModal();
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            this.hideModal();
+        });
+        
+        // Hide modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.hideModal();
+            }
+        });
+        
+        // Emoji picker events
+        emojiBtn.addEventListener('click', () => {
+            emojiPicker.classList.toggle('hidden');
+        });
+        
+        emojiOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const emoji = option.textContent;
+                const cursorPos = noteContent.selectionStart;
+                const textBefore = noteContent.value.substring(0, cursorPos);
+                const textAfter = noteContent.value.substring(noteContent.selectionEnd);
+                noteContent.value = textBefore + emoji + textAfter;
+                noteContent.focus();
+                noteContent.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+                emojiPicker.classList.add('hidden');
+            });
+        });
+        
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!emojiBtn.contains(e.target) && !emojiPicker.contains(e.target)) {
+                emojiPicker.classList.add('hidden');
+            }
+        });
+    }
+    
+    bindColorEvents() {
+        const colorOptions = document.querySelectorAll('.color-option');
+        const selectedColorInput = document.getElementById('selectedColor');
+        
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                // Remove previous selection
+                colorOptions.forEach(opt => opt.classList.remove('border-white'));
+                
+                // Add selection to clicked option
+                option.classList.add('border-white');
+                
+                // Update selected color
+                this.selectedColor = option.dataset.color;
+                selectedColorInput.value = this.selectedColor;
+            });
+        });
+        
+        // Set default selection
+        if (colorOptions.length > 0) {
+            colorOptions[0].classList.add('border-white');
+        }
+    }
+    
+    bindFormEvents() {
+        const form = document.getElementById('loveNoteForm');
+        
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Check if we're editing or creating
+            if (this.currentEditingNote) {
+                this.updateNote();
+            } else {
+                this.createNote();
+            }
+        });
+    }
+    
+    showModal() {
+        const modal = document.getElementById('loveNoteModal');
+        modal.classList.remove('hidden');
+        
+        // Focus on title input
+        setTimeout(() => {
+            document.getElementById('noteTitle').focus();
+        }, 100);
+    }
+    
+    hideModal() {
+        const modal = document.getElementById('loveNoteModal');
+        modal.classList.add('hidden');
+        
+        // Reset form and editing state
+        this.resetForm();
+        this.currentEditingNote = null;
+        
+        // Reset modal title and button text
+        document.querySelector('#loveNoteModal h3').textContent = 'Create Love Note';
+        document.querySelector('#loveNoteForm button[type="submit"]').textContent = 'Create Note';
+    }
+    
+    resetForm() {
+        const form = document.getElementById('loveNoteForm');
+        form.reset();
+        
+        // Reset color selection
+        const colorOptions = document.querySelectorAll('.color-option');
+        colorOptions.forEach(opt => opt.classList.remove('border-white'));
+        if (colorOptions.length > 0) {
+            colorOptions[0].classList.add('border-white');
+        }
+        
+        this.selectedColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        document.getElementById('selectedColor').value = this.selectedColor;
+        
+        // Reset editing state
+        this.currentEditingNote = null;
+    }
+    
+    createNote() {
+        const title = document.getElementById('noteTitle').value.trim();
+        const content = document.getElementById('noteContent').value.trim();
+        
+        if (!title || !content) {
+            alert('Please fill in both title and content.');
+            return;
+        }
+        
+        const note = {
+            id: Date.now(),
+            title: title,
+            content: content,
+            backgroundColor: this.selectedColor,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        this.notes.push(note);
+        this.saveNotes();
+        this.renderNotes();
+        this.hideModal();
+        
+        console.log('New love note created:', note);
+    }
+    
+    editNote(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) {
+            console.error('Note not found:', noteId);
+            return;
+        }
+        
+        // Set current note for editing
+        this.currentEditingNote = note;
+        
+        // Fill form with existing data
+        document.getElementById('noteTitle').value = note.title || '';
+        document.getElementById('noteContent').value = note.content || '';
+        
+        // Set background color
+        this.selectedColor = note.backgroundColor;
+        document.getElementById('selectedColor').value = this.selectedColor;
+        
+        // Update color selection UI
+        const colorOptions = document.querySelectorAll('.color-option');
+        colorOptions.forEach(opt => {
+            opt.classList.remove('border-white');
+            if (opt.dataset.color === this.selectedColor) {
+                opt.classList.add('border-white');
+            }
+        });
+        
+        // Change modal title and button text
+        document.querySelector('#loveNoteModal h3').textContent = 'Edit Love Note';
+        document.querySelector('#loveNoteForm button[type="submit"]').textContent = 'Update Note';
+        
+        this.showModal();
+    }
+    
+    updateNote() {
+        const title = document.getElementById('noteTitle').value.trim();
+        const content = document.getElementById('noteContent').value.trim();
+        
+        if (!title || !content) {
+            alert('Please fill in both title and content.');
+            return;
+        }
+        
+        // Update the note
+        this.currentEditingNote.title = title;
+        this.currentEditingNote.content = content;
+        this.currentEditingNote.backgroundColor = this.selectedColor;
+        this.currentEditingNote.updatedAt = new Date().toISOString();
+        
+        this.saveNotes();
+        this.renderNotes();
+        this.hideModal();
+        
+        console.log('Love note updated:', this.currentEditingNote);
+        this.currentEditingNote = null;
+    }
+    
+    deleteNote(noteId) {
+        const note = this.notes.find(n => n.id === noteId);
+        if (!note) {
+            console.error('Note not found:', noteId);
+            return;
+        }
+        
+        // Show confirmation dialog
+        const confirmed = confirm(`Are you sure you want to delete the note "${note.title || 'Untitled'}"?\n\nThis action cannot be undone.`);
+        
+        if (confirmed) {
+            // Remove note from array
+            this.notes = this.notes.filter(n => n.id !== noteId);
+            this.saveNotes();
+            this.renderNotes();
+            
+            console.log('Love note deleted:', note);
+        }
+    }
+    
+    renderNotes() {
+        // Find the love notes container by looking for the container after the Love Notes heading
+        const loveNotesHeading = document.querySelector('h2');
+        let notesContainer = null;
+        
+        // Find the next grid container after the Love Notes heading
+        let currentElement = loveNotesHeading.parentElement.nextElementSibling;
+        while (currentElement) {
+            if (currentElement.classList.contains('grid') && 
+                currentElement.classList.contains('gap-3') && 
+                currentElement.classList.contains('p-4')) {
+                notesContainer = currentElement;
+                break;
+            }
+            currentElement = currentElement.nextElementSibling;
+        }
+        
+        if (!notesContainer) {
+            console.error('Love notes container not found');
+            return;
+        }
+        
+        // Clear existing user notes (keep original notes)
+        const userNotes = notesContainer.querySelectorAll('.user-note');
+        userNotes.forEach(note => note.remove());
+        
+        // Add user notes before the invisible image element
+        const invisibleImg = notesContainer.querySelector('img.invisible');
+        this.notes.forEach(note => {
+            const noteElement = this.createNoteElement(note);
+            if (invisibleImg) {
+                notesContainer.insertBefore(noteElement, invisibleImg);
+            } else {
+                notesContainer.appendChild(noteElement);
+            }
+        });
+    }
+    
+    createNoteElement(note) {
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'bg-cover bg-center flex flex-col gap-3 rounded-lg justify-end p-4 aspect-square user-note relative group';
+        noteDiv.style.background = note.backgroundColor;
+        noteDiv.dataset.noteId = note.id;
+        
+        // Action buttons container (visible on hover)
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10';
+        actionsDiv.style.pointerEvents = 'auto';
+        
+        // Edit button
+        const editBtn = document.createElement('button');
+        editBtn.className = 'bg-black bg-opacity-50 text-white p-1.5 rounded-full hover:bg-opacity-70 transition-all duration-200 z-20';
+        editBtn.style.pointerEvents = 'auto';
+        editBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="14px" height="14px" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M227.31,73.37,182.63,28.69a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96A16,16,0,0,0,227.31,73.37ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.69,147.31,64l24-24L216,84.69Z"/>
+            </svg>
+        `;
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.editNote(note.id);
+        });
+        
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'bg-black bg-opacity-50 text-white p-1.5 rounded-full hover:bg-opacity-70 transition-all duration-200 z-20';
+        deleteBtn.style.pointerEvents = 'auto';
+        deleteBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="14px" height="14px" fill="currentColor" viewBox="0 0 256 256">
+                <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/>
+            </svg>
+        `;
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteNote(note.id);
+        });
+        
+        actionsDiv.appendChild(editBtn);
+        actionsDiv.appendChild(deleteBtn);
+        
+        // Note content
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'flex flex-col gap-2 h-full justify-between';
+        
+        // Top content (title and text)
+        const topContent = document.createElement('div');
+        topContent.className = 'flex flex-col gap-1';
+        
+        // Title (if exists)
+        if (note.title) {
+            const titleP = document.createElement('p');
+            titleP.className = 'text-white text-sm font-bold leading-tight opacity-90';
+            titleP.textContent = note.title;
+            topContent.appendChild(titleP);
+        }
+        
+        // Content
+        const textP = document.createElement('p');
+        textP.className = 'text-white text-base font-bold leading-tight w-4/5 line-clamp-2';
+        textP.textContent = note.content;
+        topContent.appendChild(textP);
+        
+        contentDiv.appendChild(topContent);
+        
+        // Date display at bottom
+        const dateP = document.createElement('p');
+        dateP.className = 'text-white/80 text-xs font-medium mt-auto';
+        const date = new Date(note.createdAt);
+        const formattedDate = date.toLocaleDateString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const formattedTime = date.toLocaleTimeString('zh-CN', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        dateP.textContent = `${formattedDate} ${formattedTime}`;
+        contentDiv.appendChild(dateP);
+        
+        noteDiv.appendChild(actionsDiv);
+        noteDiv.appendChild(contentDiv);
+        
+        return noteDiv;
+    }
+    
+    saveNotes() {
+        localStorage.setItem('loveNotes', JSON.stringify(this.notes));
+    }
+    
+    loadNotes() {
+        const savedNotes = localStorage.getItem('loveNotes');
+        if (savedNotes) {
+            this.notes = JSON.parse(savedNotes);
+            this.renderNotes();
+        }
+    }
+}
+
 // Initialize all components after page load
 document.addEventListener('DOMContentLoaded', function() {
     const musicPlayer = new MusicPlayer();
     const calendar = new Calendar();
+    const loveNotesManager = new LoveNotesManager();
     
     // Create two days counter instances
     const daysCounter1 = new DaysCounter('daysCounter1', '2025-05-05');
@@ -544,10 +946,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add instances to global scope for debugging and user configuration
     window.musicPlayer = musicPlayer;
     window.calendar = calendar;
+    window.loveNotesManager = loveNotesManager;
     window.daysCounter1 = daysCounter1;
     window.daysCounter2 = daysCounter2;
     
-    console.log('Music player, calendar and two days counters initialized');
+    console.log('Music player, calendar, love notes manager and two days counters initialized');
 });
 
 console.log('Page loaded successfully');
