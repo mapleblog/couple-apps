@@ -19,26 +19,9 @@ class AvatarManager {
     }
 
     addClickHandler(avatarElement, personName) {
-        // Add click event listeners
-        avatarElement.style.cursor = 'pointer';
-        avatarElement.title = `Click to change ${personName === 'clara' ? 'Clara' : 'Ethan'}'s avatar`;
-
-        // Add click event
-        avatarElement.addEventListener('click', () => {
-            this.openImageSelector(avatarElement, personName);
-        });
-
-        // Add hover effects
-        avatarElement.addEventListener('mouseenter', () => {
-            avatarElement.style.opacity = '0.8';
-            avatarElement.style.transform = 'scale(1.02)';
-            avatarElement.style.transition = 'all 0.3s ease';
-        });
-
-        avatarElement.addEventListener('mouseleave', () => {
-            avatarElement.style.opacity = '1';
-            avatarElement.style.transform = 'scale(1)';
-        });
+        // Click functionality has been disabled
+        // Avatar display functionality remains intact
+        // No click events, hover effects, or cursor changes
     }
 
     openImageSelector(avatarElement, personName) {
