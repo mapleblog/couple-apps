@@ -132,20 +132,29 @@
                 </div>
               </div>
             </div>
+            <!-- 情侣头像区域 - 修改为可插入自定义图片的img元素 -->
             <div class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
               <div class="flex flex-col gap-3 pb-3">
-                <div
-                  class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg profile-clara"
-                ></div>
+                <!-- Clara的头像 - 改为img元素以支持自定义图片 -->
+                <img
+                  id="clara-avatar"
+                  src="./pic/disneyland-paris.jpg"
+                  alt="Clara Bennett"
+                  class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg object-cover"
+                />
                 <div>
                   <p class="text-white text-base font-medium leading-normal">Clara Bennett</p>
                   <p class="text-[#c992ad] text-sm font-normal leading-normal">Aspiring artist</p>
                 </div>
               </div>
               <div class="flex flex-col gap-3 pb-3">
-                <div
-                  class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg profile-ethan"
-                ></div>
+                <!-- Ethan的头像 - 改为img元素以支持自定义图片 -->
+                <img
+                  id="ethan-avatar"
+                  src="./pic/Arc_de_Triomphe,_Paris_21_October_2010.jpg"
+                  alt="Ethan Walker"
+                  class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-lg object-cover"
+                />
                 <div>
                   <p class="text-white text-base font-medium leading-normal">Ethan Walker</p>
                   <p class="text-[#c992ad] text-sm font-normal leading-normal">Software engineer</p>
@@ -229,6 +238,10 @@
         </div>
       </div>
     </div>
+    <!-- 引入JavaScript脚本 -->
+    <script src="script.js"></script>
+    <!-- 头像管理功能脚本 -->
+    <script src="avatar-manager.js"></script>
   </body>
 </html>
 
