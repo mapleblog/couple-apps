@@ -1060,3 +1060,323 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('Page loaded successfully');
+
+// 图片防护功能类
+class ImageProtection {
+    constructor() {
+        this.init();
+    }
+    
+    init() {
+        this.disableRightClick();
+        this.disableDragAndDrop();
+        this.disableKeyboardShortcuts();
+        this.disableDevTools();
+        this.disableImageSaving();
+        this.addImageOverlays();
+        console.log('图片防护功能已启用');
+    }
+    
+    // 禁用右键菜单
+    disableRightClick() {
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        // 特别针对图片的右键保护
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        }, true);
+    }
+    
+    // 禁用拖拽和拖放
+    disableDragAndDrop() {
+        // 禁用所有拖拽事件
+        ['dragstart', 'drag', 'dragenter', 'dragleave', 'dragover', 'drop'].forEach(event => {
+            document.addEventListener(event, function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            }, true);
+        });
+        
+        // 禁用选择开始事件
+        document.addEventListener('selectstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+    
+    // 禁用键盘快捷键
+    disableKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // 禁用 Ctrl+S (保存)
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+A (全选)
+            if (e.ctrlKey && e.key === 'a') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+C (复制)
+            if (e.ctrlKey && e.key === 'c') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+V (粘贴)
+            if (e.ctrlKey && e.key === 'v') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+X (剪切)
+            if (e.ctrlKey && e.key === 'x') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+P (打印)
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+    
+    // 禁用开发者工具
+    disableDevTools() {
+        // 禁用 F12
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F12') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+Shift+I (开发者工具)
+            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+Shift+J (控制台)
+            if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+Shift+C (元素选择器)
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 禁用 Ctrl+U (查看源代码)
+            if (e.ctrlKey && e.key === 'u') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具是否打开
+        let devtools = {
+            open: false,
+            orientation: null
+        };
+        
+        const threshold = 160;
+        
+        setInterval(() => {
+            if (window.outerHeight - window.innerHeight > threshold || 
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtools.open) {
+                    devtools.open = true;
+                    console.clear();
+                    document.body.innerHTML = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;z-index:999999;">访问被限制</div>';
+                }
+            } else {
+                devtools.open = false;
+            }
+        }, 500);
+    }
+    
+    // 禁用图片保存相关功能
+    disableImageSaving() {
+        // 禁用图片的默认行为
+        document.addEventListener('mousedown', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 禁用长按保存（移动端）
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 禁用图片加载完成后的默认行为
+        document.addEventListener('load', function(e) {
+            if (e.target.tagName === 'IMG') {
+                e.target.oncontextmenu = function() { return false; };
+                e.target.ondragstart = function() { return false; };
+                e.target.onselectstart = function() { return false; };
+            }
+        }, true);
+    }
+    
+    // 为图片添加透明遮罩层
+    addImageOverlays() {
+        // 等待DOM加载完成后添加遮罩
+        setTimeout(() => {
+            const images = document.querySelectorAll('img');
+            images.forEach(img => {
+                // 跳过已经有遮罩的图片
+                if (img.parentElement.classList.contains('protected-image-container')) {
+                    return;
+                }
+                
+                // 创建容器
+                const container = document.createElement('div');
+                container.className = 'protected-image-container';
+                
+                // 创建遮罩层
+                const overlay = document.createElement('div');
+                overlay.className = 'image-overlay';
+                
+                // 将图片包装在容器中
+                img.parentNode.insertBefore(container, img);
+                container.appendChild(img);
+                container.appendChild(overlay);
+                
+                // 阻止遮罩层上的所有事件
+                overlay.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                overlay.addEventListener('dragstart', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                overlay.addEventListener('selectstart', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+            });
+        }, 1000);
+    }
+    
+    // 动态监听新添加的图片
+    observeNewImages() {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.tagName === 'IMG') {
+                            this.protectSingleImage(node);
+                        } else {
+                            const images = node.querySelectorAll('img');
+                            images.forEach(img => this.protectSingleImage(img));
+                        }
+                    }
+                });
+            });
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+    
+    // 保护单个图片
+    protectSingleImage(img) {
+        if (img.parentElement.classList.contains('protected-image-container')) {
+            return;
+        }
+        
+        const container = document.createElement('div');
+        container.className = 'protected-image-container';
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'image-overlay';
+        
+        img.parentNode.insertBefore(container, img);
+        container.appendChild(img);
+        container.appendChild(overlay);
+        
+        // 阻止遮罩层上的所有事件
+        ['contextmenu', 'dragstart', 'selectstart', 'mousedown', 'touchstart'].forEach(event => {
+            overlay.addEventListener(event, (e) => {
+                e.preventDefault();
+                return false;
+            });
+        });
+    }
+}
+
+// 初始化图片防护功能
+document.addEventListener('DOMContentLoaded', function() {
+    const imageProtection = new ImageProtection();
+    imageProtection.observeNewImages();
+    
+    // 添加到全局作用域以便调试
+    window.imageProtection = imageProtection;
+});
+
+// 额外的防护措施
+(function() {
+    'use strict';
+    
+    // 禁用控制台
+    Object.defineProperty(window, 'console', {
+        value: {
+            log: function() {},
+            warn: function() {},
+            error: function() {},
+            info: function() {},
+            debug: function() {},
+            clear: function() {},
+            dir: function() {},
+            dirxml: function() {},
+            table: function() {},
+            trace: function() {},
+            group: function() {},
+            groupCollapsed: function() {},
+            groupEnd: function() {},
+            time: function() {},
+            timeEnd: function() {},
+            timeStamp: function() {},
+            profile: function() {},
+            profileEnd: function() {},
+            count: function() {},
+            assert: function() {}
+        },
+        writable: false,
+        configurable: false
+    });
+    
+    // 禁用调试器
+    setInterval(function() {
+        debugger;
+    }, 100);
+    
+})();
