@@ -537,6 +537,8 @@ class LoveNotesManager {
     constructor() {
         this.notes = [];
         this.selectedColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        this.currentPage = 1;
+        this.itemsPerPage = 4;
         this.init();
     }
     
@@ -552,6 +554,9 @@ class LoveNotesManager {
         
         // Bind form events
         this.bindFormEvents();
+        
+        // Bind pagination events
+        this.bindPaginationEvents();
     }
     
     bindModalEvents() {
@@ -650,6 +655,132 @@ class LoveNotesManager {
         });
     }
     
+    bindPaginationEvents() {
+        // Find pagination container
+        const paginationContainer = document.querySelector('.flex.items-center.justify-center.p-4');
+        if (!paginationContainer) {
+            console.error('Pagination container not found');
+            return;
+        }
+        
+        // Get pagination elements
+        const prevBtn = paginationContainer.querySelector('a[href="#"]:first-child');
+        const nextBtn = paginationContainer.querySelector('a[href="#"]:last-child');
+        const pageNumbers = paginationContainer.querySelectorAll('a[href="#"]:not(:first-child):not(:last-child)');
+        
+        // Previous button
+        if (prevBtn) {
+            prevBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.goToPreviousPage();
+            });
+        }
+        
+        // Next button
+        if (nextBtn) {
+            nextBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.goToNextPage();
+            });
+        }
+        
+        // Page number buttons
+        pageNumbers.forEach((btn, index) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.goToPage(index + 1);
+            });
+        });
+    }
+    
+    getTotalPages() {
+        return Math.ceil(this.notes.length / this.itemsPerPage);
+    }
+    
+    goToPage(page) {
+        const totalPages = this.getTotalPages();
+        if (page < 1 || page > totalPages) {
+            return;
+        }
+        
+        this.currentPage = page;
+        this.renderNotes();
+        this.updatePaginationUI();
+    }
+    
+    goToPreviousPage() {
+        if (this.currentPage > 1) {
+            this.goToPage(this.currentPage - 1);
+        }
+    }
+    
+    goToNextPage() {
+        const totalPages = this.getTotalPages();
+        if (this.currentPage < totalPages) {
+            this.goToPage(this.currentPage + 1);
+        }
+    }
+    
+    updatePaginationUI() {
+        const paginationContainer = document.querySelector('.flex.items-center.justify-center.p-4');
+        if (!paginationContainer) {
+            return;
+        }
+        
+        const totalPages = this.getTotalPages();
+        const prevBtn = paginationContainer.querySelector('a[href="#"]:first-child');
+        const nextBtn = paginationContainer.querySelector('a[href="#"]:last-child');
+        const pageNumbers = paginationContainer.querySelectorAll('a[href="#"]:not(:first-child):not(:last-child)');
+        
+        // Update previous button state
+        if (prevBtn) {
+            if (this.currentPage <= 1) {
+                prevBtn.style.opacity = '0.5';
+                prevBtn.style.pointerEvents = 'none';
+            } else {
+                prevBtn.style.opacity = '1';
+                prevBtn.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // Update next button state
+        if (nextBtn) {
+            if (this.currentPage >= totalPages) {
+                nextBtn.style.opacity = '0.5';
+                nextBtn.style.pointerEvents = 'none';
+            } else {
+                nextBtn.style.opacity = '1';
+                nextBtn.style.pointerEvents = 'auto';
+            }
+        }
+        
+        // Update page numbers
+        pageNumbers.forEach((btn, index) => {
+            const pageNum = index + 1;
+            btn.textContent = pageNum;
+            
+            if (pageNum === this.currentPage) {
+                btn.className = 'text-sm font-bold leading-normal tracking-[0.015em] flex size-10 items-center justify-center text-white rounded-full bg-[#482336]';
+            } else {
+                btn.className = 'text-sm font-normal leading-normal flex size-10 items-center justify-center text-white rounded-full';
+            }
+            
+            // Hide page numbers beyond total pages
+            if (pageNum > totalPages) {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = 'flex';
+            }
+        });
+        
+        // Hide pagination if only one page or no notes
+        if (totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+        } else {
+            paginationContainer.style.display = 'flex';
+        }
+    }
+    
     showModal() {
         const modal = document.getElementById('loveNoteModal');
         modal.classList.remove('hidden');
@@ -710,6 +841,13 @@ class LoveNotesManager {
         };
         
         this.notes.push(note);
+        
+        // Calculate if we need to go to the last page for the new note
+        const totalPages = this.getTotalPages();
+        if (totalPages > this.currentPage) {
+            this.currentPage = totalPages;
+        }
+        
         this.saveNotes();
         this.renderNotes();
         this.hideModal();
@@ -787,6 +925,15 @@ class LoveNotesManager {
         if (confirmed) {
             // Remove note from array
             this.notes = this.notes.filter(n => n.id !== noteId);
+            
+            // Adjust current page if necessary
+            const totalPages = this.getTotalPages();
+            if (this.currentPage > totalPages && totalPages > 0) {
+                this.currentPage = totalPages;
+            } else if (totalPages === 0) {
+                this.currentPage = 1;
+            }
+            
             this.saveNotes();
             this.renderNotes();
             
@@ -820,9 +967,14 @@ class LoveNotesManager {
         const userNotes = notesContainer.querySelectorAll('.user-note');
         userNotes.forEach(note => note.remove());
         
-        // Add user notes before the invisible image element
+        // Calculate pagination
+        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const currentPageNotes = this.notes.slice(startIndex, endIndex);
+        
+        // Add user notes for current page before the invisible image element
         const invisibleImg = notesContainer.querySelector('img.invisible');
-        this.notes.forEach(note => {
+        currentPageNotes.forEach(note => {
             const noteElement = this.createNoteElement(note);
             if (invisibleImg) {
                 notesContainer.insertBefore(noteElement, invisibleImg);
@@ -830,6 +982,9 @@ class LoveNotesManager {
                 notesContainer.appendChild(noteElement);
             }
         });
+        
+        // Update pagination UI
+        this.updatePaginationUI();
     }
     
     createNoteElement(note) {
