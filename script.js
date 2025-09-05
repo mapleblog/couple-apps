@@ -540,10 +540,20 @@ class LoveNotesManager {
         this.currentPage = 1;
         this.itemsPerPage = 4;
         this.totalPages = 1;
+        
+        // Firebase集成
+        this.firebaseDB = null;
+        this.firebaseListenerId = null;
+        this.isOnline = false;
+        this.syncInProgress = false;
+        
         this.init();
     }
     
     init() {
+        // Initialize Firebase
+        this.initializeFirebase();
+        
         // Load existing notes from localStorage
         this.loadNotes();
         
@@ -558,6 +568,9 @@ class LoveNotesManager {
         
         // Bind pagination events
         this.bindPaginationEvents();
+        
+        // Setup network status monitoring
+        this.setupNetworkMonitoring();
     }
     
     bindModalEvents() {
@@ -699,7 +712,7 @@ class LoveNotesManager {
         this.currentEditingNote = null;
     }
     
-    createNote() {
+    async createNote() {
         const title = document.getElementById('noteTitle').value.trim();
         const content = document.getElementById('noteContent').value.trim();
         
@@ -717,17 +730,32 @@ class LoveNotesManager {
             updatedAt: new Date().toISOString()
         };
         
-        this.notes.push(note);
-        this.saveNotes();
-        
-        // Navigate to the last page to show the new note
-        this.calculateTotalPages();
-        this.currentPage = this.totalPages;
-        
-        this.renderNotes();
-        this.hideModal();
-        
-        console.log('New love note created:', note);
+        try {
+            // Add to local storage first
+            this.notes.push(note);
+            this.saveNotes();
+            
+            // Try to sync to Firebase if online
+            if (this.isOnline && this.firebaseDB) {
+                await this.firebaseDB.addNote(note);
+                console.log('Note synced to Firebase:', note.id);
+            } else {
+                console.log('Note saved locally, will sync when online');
+            }
+            
+            // Navigate to the last page to show the new note
+            this.calculateTotalPages();
+            this.currentPage = this.totalPages;
+            
+            this.renderNotes();
+            this.hideModal();
+            
+            console.log('New love note created:', note);
+            
+        } catch (error) {
+            console.error('Error creating note:', error);
+            alert('Failed to save note. Please try again.');
+        }
     }
     
     editNote(noteId) {
@@ -764,7 +792,7 @@ class LoveNotesManager {
         this.showModal();
     }
     
-    updateNote() {
+    async updateNote() {
         const title = document.getElementById('noteTitle').value.trim();
         const content = document.getElementById('noteContent').value.trim();
         
@@ -773,21 +801,37 @@ class LoveNotesManager {
             return;
         }
         
-        // Update the note
-        this.currentEditingNote.title = title;
-        this.currentEditingNote.content = content;
-        this.currentEditingNote.backgroundColor = this.selectedColor;
-        this.currentEditingNote.updatedAt = new Date().toISOString();
-        
-        this.saveNotes();
-        this.renderNotes();
-        this.hideModal();
-        
-        console.log('Love note updated:', this.currentEditingNote);
-        this.currentEditingNote = null;
+        try {
+            // Update the note
+            this.currentEditingNote.title = title;
+            this.currentEditingNote.content = content;
+            this.currentEditingNote.backgroundColor = this.selectedColor;
+            this.currentEditingNote.updatedAt = new Date().toISOString();
+            
+            // Save to local storage first
+            this.saveNotes();
+            
+            // Try to sync to Firebase if online
+            if (this.isOnline && this.firebaseDB) {
+                await this.firebaseDB.updateNote(this.currentEditingNote.id, this.currentEditingNote);
+                console.log('Note updated in Firebase:', this.currentEditingNote.id);
+            } else {
+                console.log('Note updated locally, will sync when online');
+            }
+            
+            this.renderNotes();
+            this.hideModal();
+            
+            console.log('Love note updated:', this.currentEditingNote);
+            this.currentEditingNote = null;
+            
+        } catch (error) {
+            console.error('Error updating note:', error);
+            alert('Failed to update note. Please try again.');
+        }
     }
     
-    deleteNote(noteId) {
+    async deleteNote(noteId) {
         const note = this.notes.find(n => n.id === noteId);
         if (!note) {
             console.error('Note not found:', noteId);
@@ -798,19 +842,33 @@ class LoveNotesManager {
         const confirmed = confirm(`Are you sure you want to delete the note "${note.title || 'Untitled'}"?\n\nThis action cannot be undone.`);
         
         if (confirmed) {
-            // Remove note from array
-            this.notes = this.notes.filter(n => n.id !== noteId);
-            this.saveNotes();
-            
-            // Adjust current page if necessary
-            this.calculateTotalPages();
-            if (this.currentPage > this.totalPages && this.totalPages > 0) {
-                this.currentPage = this.totalPages;
+            try {
+                // Remove note from local array
+                this.notes = this.notes.filter(n => n.id !== noteId);
+                this.saveNotes();
+                
+                // Try to delete from Firebase if online
+                if (this.isOnline && this.firebaseDB) {
+                    await this.firebaseDB.deleteNote(noteId);
+                    console.log('Note deleted from Firebase:', noteId);
+                } else {
+                    console.log('Note deleted locally, will sync when online');
+                }
+                
+                // Adjust current page if necessary
+                this.calculateTotalPages();
+                if (this.currentPage > this.totalPages && this.totalPages > 0) {
+                    this.currentPage = this.totalPages;
+                }
+                
+                this.renderNotes();
+                
+                console.log('Love note deleted:', note);
+                
+            } catch (error) {
+                console.error('Error deleting note:', error);
+                alert('Failed to delete note. Please try again.');
             }
-            
-            this.renderNotes();
-            
-            console.log('Love note deleted:', note);
         }
     }
     
@@ -1037,6 +1095,108 @@ class LoveNotesManager {
             }
         }, 100);
     }
+    
+    // Firebase integration methods
+    async initializeFirebase() {
+        try {
+            // Check if Firebase modules are available
+            if (typeof FirebaseDB === 'undefined') {
+                console.warn('Firebase modules not loaded, using local storage only');
+                return;
+            }
+            
+            this.firebaseDB = new FirebaseDB();
+            await this.firebaseDB.init();
+            
+            // Set up real-time listener for notes
+            this.firebaseListenerId = this.firebaseDB.onNotesChange((notes) => {
+                if (!this.syncInProgress) {
+                    this.handleFirebaseNotesUpdate(notes);
+                }
+            });
+            
+            // Initial sync from Firebase
+            await this.syncFromFirebase();
+            
+            console.log('Firebase initialized successfully');
+            
+        } catch (error) {
+            console.error('Failed to initialize Firebase:', error);
+            console.log('Continuing with local storage only');
+        }
+    }
+    
+    setupNetworkMonitoring() {
+        // Monitor online/offline status
+        window.addEventListener('online', () => {
+            this.isOnline = true;
+            console.log('Network connection restored');
+            this.syncToFirebase();
+        });
+        
+        window.addEventListener('offline', () => {
+            this.isOnline = false;
+            console.log('Network connection lost, using local storage');
+        });
+        
+        // Initial network status
+        this.isOnline = navigator.onLine;
+    }
+    
+    async syncFromFirebase() {
+        if (!this.firebaseDB || !this.isOnline) return;
+        
+        try {
+            this.syncInProgress = true;
+            const firebaseNotes = await this.firebaseDB.getAllNotes();
+            
+            if (firebaseNotes && firebaseNotes.length > 0) {
+                // Merge with local notes (Firebase takes precedence)
+                this.notes = firebaseNotes;
+                this.saveNotes();
+                this.calculateTotalPages();
+                this.renderNotes();
+                console.log('Synced notes from Firebase:', firebaseNotes.length);
+            }
+            
+        } catch (error) {
+            console.error('Error syncing from Firebase:', error);
+        } finally {
+            this.syncInProgress = false;
+        }
+    }
+    
+    async syncToFirebase() {
+        if (!this.firebaseDB || !this.isOnline || this.syncInProgress) return;
+        
+        try {
+            this.syncInProgress = true;
+            
+            // Sync all local notes to Firebase
+            for (const note of this.notes) {
+                await this.firebaseDB.addNote(note);
+            }
+            
+            console.log('Synced local notes to Firebase');
+            
+        } catch (error) {
+            console.error('Error syncing to Firebase:', error);
+        } finally {
+            this.syncInProgress = false;
+        }
+    }
+    
+    handleFirebaseNotesUpdate(firebaseNotes) {
+        if (!firebaseNotes) return;
+        
+        // Update local notes with Firebase data
+        this.notes = firebaseNotes;
+        this.saveNotes();
+        this.calculateTotalPages();
+        this.renderNotes();
+        
+        console.log('Notes updated from Firebase real-time listener');
+    }
 }
 
 // Initialize all components after page load
@@ -1060,323 +1220,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('Page loaded successfully');
-
-// 图片防护功能类
-class ImageProtection {
-    constructor() {
-        this.init();
-    }
-    
-    init() {
-        this.disableRightClick();
-        this.disableDragAndDrop();
-        this.disableKeyboardShortcuts();
-        this.disableDevTools();
-        this.disableImageSaving();
-        this.addImageOverlays();
-        console.log('图片防护功能已启用');
-    }
-    
-    // 禁用右键菜单
-    disableRightClick() {
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            return false;
-        });
-        
-        // 特别针对图片的右键保护
-        document.addEventListener('contextmenu', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            }
-        }, true);
-    }
-    
-    // 禁用拖拽和拖放
-    disableDragAndDrop() {
-        // 禁用所有拖拽事件
-        ['dragstart', 'drag', 'dragenter', 'dragleave', 'dragover', 'drop'].forEach(event => {
-            document.addEventListener(event, function(e) {
-                if (e.target.tagName === 'IMG') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    return false;
-                }
-            }, true);
-        });
-        
-        // 禁用选择开始事件
-        document.addEventListener('selectstart', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                return false;
-            }
-        });
-    }
-    
-    // 禁用键盘快捷键
-    disableKeyboardShortcuts() {
-        document.addEventListener('keydown', function(e) {
-            // 禁用 Ctrl+S (保存)
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+A (全选)
-            if (e.ctrlKey && e.key === 'a') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+C (复制)
-            if (e.ctrlKey && e.key === 'c') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+V (粘贴)
-            if (e.ctrlKey && e.key === 'v') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+X (剪切)
-            if (e.ctrlKey && e.key === 'x') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+P (打印)
-            if (e.ctrlKey && e.key === 'p') {
-                e.preventDefault();
-                return false;
-            }
-        });
-    }
-    
-    // 禁用开发者工具
-    disableDevTools() {
-        // 禁用 F12
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'F12') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+Shift+I (开发者工具)
-            if (e.ctrlKey && e.shiftKey && e.key === 'I') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+Shift+J (控制台)
-            if (e.ctrlKey && e.shiftKey && e.key === 'J') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+Shift+C (元素选择器)
-            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
-                e.preventDefault();
-                return false;
-            }
-            
-            // 禁用 Ctrl+U (查看源代码)
-            if (e.ctrlKey && e.key === 'u') {
-                e.preventDefault();
-                return false;
-            }
-        });
-        
-        // 检测开发者工具是否打开
-        let devtools = {
-            open: false,
-            orientation: null
-        };
-        
-        const threshold = 160;
-        
-        setInterval(() => {
-            if (window.outerHeight - window.innerHeight > threshold || 
-                window.outerWidth - window.innerWidth > threshold) {
-                if (!devtools.open) {
-                    devtools.open = true;
-                    console.clear();
-                    document.body.innerHTML = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;z-index:999999;">访问被限制</div>';
-                }
-            } else {
-                devtools.open = false;
-            }
-        }, 500);
-    }
-    
-    // 禁用图片保存相关功能
-    disableImageSaving() {
-        // 禁用图片的默认行为
-        document.addEventListener('mousedown', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                return false;
-            }
-        });
-        
-        // 禁用长按保存（移动端）
-        document.addEventListener('touchstart', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.preventDefault();
-                return false;
-            }
-        });
-        
-        // 禁用图片加载完成后的默认行为
-        document.addEventListener('load', function(e) {
-            if (e.target.tagName === 'IMG') {
-                e.target.oncontextmenu = function() { return false; };
-                e.target.ondragstart = function() { return false; };
-                e.target.onselectstart = function() { return false; };
-            }
-        }, true);
-    }
-    
-    // 为图片添加透明遮罩层
-    addImageOverlays() {
-        // 等待DOM加载完成后添加遮罩
-        setTimeout(() => {
-            const images = document.querySelectorAll('img');
-            images.forEach(img => {
-                // 跳过已经有遮罩的图片
-                if (img.parentElement.classList.contains('protected-image-container')) {
-                    return;
-                }
-                
-                // 创建容器
-                const container = document.createElement('div');
-                container.className = 'protected-image-container';
-                
-                // 创建遮罩层
-                const overlay = document.createElement('div');
-                overlay.className = 'image-overlay';
-                
-                // 将图片包装在容器中
-                img.parentNode.insertBefore(container, img);
-                container.appendChild(img);
-                container.appendChild(overlay);
-                
-                // 阻止遮罩层上的所有事件
-                overlay.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    return false;
-                });
-                
-                overlay.addEventListener('dragstart', (e) => {
-                    e.preventDefault();
-                    return false;
-                });
-                
-                overlay.addEventListener('selectstart', (e) => {
-                    e.preventDefault();
-                    return false;
-                });
-            });
-        }, 1000);
-    }
-    
-    // 动态监听新添加的图片
-    observeNewImages() {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.tagName === 'IMG') {
-                            this.protectSingleImage(node);
-                        } else {
-                            const images = node.querySelectorAll('img');
-                            images.forEach(img => this.protectSingleImage(img));
-                        }
-                    }
-                });
-            });
-        });
-        
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    }
-    
-    // 保护单个图片
-    protectSingleImage(img) {
-        if (img.parentElement.classList.contains('protected-image-container')) {
-            return;
-        }
-        
-        const container = document.createElement('div');
-        container.className = 'protected-image-container';
-        
-        const overlay = document.createElement('div');
-        overlay.className = 'image-overlay';
-        
-        img.parentNode.insertBefore(container, img);
-        container.appendChild(img);
-        container.appendChild(overlay);
-        
-        // 阻止遮罩层上的所有事件
-        ['contextmenu', 'dragstart', 'selectstart', 'mousedown', 'touchstart'].forEach(event => {
-            overlay.addEventListener(event, (e) => {
-                e.preventDefault();
-                return false;
-            });
-        });
-    }
-}
-
-// 初始化图片防护功能
-document.addEventListener('DOMContentLoaded', function() {
-    const imageProtection = new ImageProtection();
-    imageProtection.observeNewImages();
-    
-    // 添加到全局作用域以便调试
-    window.imageProtection = imageProtection;
-});
-
-// 额外的防护措施
-(function() {
-    'use strict';
-    
-    // 禁用控制台
-    Object.defineProperty(window, 'console', {
-        value: {
-            log: function() {},
-            warn: function() {},
-            error: function() {},
-            info: function() {},
-            debug: function() {},
-            clear: function() {},
-            dir: function() {},
-            dirxml: function() {},
-            table: function() {},
-            trace: function() {},
-            group: function() {},
-            groupCollapsed: function() {},
-            groupEnd: function() {},
-            time: function() {},
-            timeEnd: function() {},
-            timeStamp: function() {},
-            profile: function() {},
-            profileEnd: function() {},
-            count: function() {},
-            assert: function() {}
-        },
-        writable: false,
-        configurable: false
-    });
-    
-    // 禁用调试器
-    setInterval(function() {
-        debugger;
-    }, 100);
-    
-})();

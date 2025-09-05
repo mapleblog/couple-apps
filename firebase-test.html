@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase 连接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        input[type="text"] {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Realtime Database 测试</h1>
+        
+        <!-- 连接状态 -->
+        <div class="test-section">
+            <h3>📡 连接状态</h3>
+            <div id="connectionStatus" class="status info">正在检查连接状态...</div>
+            <button onclick="checkConnection()">重新检查连接</button>
+        </div>
+
+        <!-- 基本写入测试 -->
+        <div class="test-section">
+            <h3>✍️ 数据写入测试</h3>
+            <input type="text" id="testMessage" placeholder="输入测试消息" value="Hello Firebase!">
+            <button onclick="writeTestData()">写入数据</button>
+            <div id="writeStatus"></div>
+        </div>
+
+        <!-- 基本读取测试 -->
+        <div class="test-section">
+            <h3>📖 数据读取测试</h3>
+            <button onclick="readTestData()">读取数据</button>
+            <div id="readStatus"></div>
+            <div id="readData" class="log"></div>
+        </div>
+
+        <!-- 实时监听测试 -->
+        <div class="test-section">
+            <h3>🔄 实时监听测试</h3>
+            <button onclick="startListening()">开始监听</button>
+            <button onclick="stopListening()">停止监听</button>
+            <div id="listenStatus"></div>
+            <div id="listenData" class="log"></div>
+        </div>
+
+        <!-- Love Notes 数据测试 -->
+        <div class="test-section">
+            <h3>💕 Love Notes 数据测试</h3>
+            <input type="text" id="noteTitle" placeholder="标题" value="测试留言">
+            <input type="text" id="noteContent" placeholder="内容" value="这是一条测试留言">
+            <button onclick="addLoveNote()">添加留言</button>
+            <button onclick="loadLoveNotes()">加载所有留言</button>
+            <div id="loveNotesStatus"></div>
+            <div id="loveNotesData" class="log"></div>
+        </div>
+
+        <!-- 操作日志 -->
+        <div class="test-section">
+            <h3>📋 操作日志</h3>
+            <button onclick="clearLog()">清空日志</button>
+            <div id="operationLog" class="log"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- 本地配置文件 -->
+    <script src="firebase-config.js"></script>
+    
+    <script>
+        let testDatabase = null;
+        let testListener = null;
+        
+        // 日志函数
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('operationLog');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[Firebase Test] ${message}`);
+        }
+        
+        // 显示状态
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+        
+        // 初始化Firebase
+        async function initFirebase() {
+            try {
+                log('开始初始化Firebase...');
+                
+                if (typeof FirebaseConfig === 'undefined') {
+                    throw new Error('FirebaseConfig未加载');
+                }
+                
+                const success = await FirebaseConfig.initialize();
+                if (success) {
+                    testDatabase = FirebaseConfig.database;
+                    log('Firebase初始化成功');
+                    checkConnection();
+                } else {
+                    throw new Error('Firebase初始化失败');
+                }
+            } catch (error) {
+                log(`Firebase初始化错误: ${error.message}`, 'error');
+                showStatus('connectionStatus', `初始化失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 检查连接状态
+        async function checkConnection() {
+            try {
+                log('检查Firebase连接状态...');
+                
+                if (!testDatabase) {
+                    throw new Error('数据库未初始化');
+                }
+                
+                const isConnected = await FirebaseConfig.checkConnection();
+                if (isConnected) {
+                    showStatus('connectionStatus', '✅ Firebase连接正常', 'success');
+                    log('Firebase连接状态: 已连接');
+                } else {
+                    showStatus('connectionStatus', '❌ Firebase连接失败', 'error');
+                    log('Firebase连接状态: 未连接');
+                }
+            } catch (error) {
+                showStatus('connectionStatus', `连接检查失败: ${error.message}`, 'error');
+                log(`连接检查错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 写入测试数据
+        async function writeTestData() {
+            try {
+                const message = document.getElementById('testMessage').value;
+                if (!message.trim()) {
+                    throw new Error('请输入测试消息');
+                }
+                
+                log(`写入测试数据: ${message}`);
+                
+                const testRef = testDatabase.ref('test/message');
+                await testRef.set({
+                    content: message,
+                    timestamp: FirebaseConfig.getServerTimestamp(),
+                    testId: Date.now()
+                });
+                
+                showStatus('writeStatus', '✅ 数据写入成功', 'success');
+                log('测试数据写入成功');
+            } catch (error) {
+                showStatus('writeStatus', `❌ 写入失败: ${error.message}`, 'error');
+                log(`数据写入错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 读取测试数据
+        async function readTestData() {
+            try {
+                log('读取测试数据...');
+                
+                const testRef = testDatabase.ref('test/message');
+                const snapshot = await testRef.once('value');
+                const data = snapshot.val();
+                
+                if (data) {
+                    showStatus('readStatus', '✅ 数据读取成功', 'success');
+                    document.getElementById('readData').textContent = JSON.stringify(data, null, 2);
+                    log('测试数据读取成功');
+                } else {
+                    showStatus('readStatus', '⚠️ 没有找到数据', 'info');
+                    document.getElementById('readData').textContent = '没有数据';
+                    log('没有找到测试数据');
+                }
+            } catch (error) {
+                showStatus('readStatus', `❌ 读取失败: ${error.message}`, 'error');
+                log(`数据读取错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 开始实时监听
+        function startListening() {
+            try {
+                if (testListener) {
+                    log('监听器已经在运行中');
+                    return;
+                }
+                
+                log('开始实时监听...');
+                
+                const testRef = testDatabase.ref('test');
+                testListener = testRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    const listenDataElement = document.getElementById('listenData');
+                    
+                    if (data) {
+                        listenDataElement.textContent = JSON.stringify(data, null, 2);
+                        log('收到实时数据更新');
+                    } else {
+                        listenDataElement.textContent = '没有数据';
+                    }
+                }, (error) => {
+                    log(`监听错误: ${error.message}`, 'error');
+                });
+                
+                showStatus('listenStatus', '✅ 实时监听已启动', 'success');
+                log('实时监听启动成功');
+            } catch (error) {
+                showStatus('listenStatus', `❌ 监听启动失败: ${error.message}`, 'error');
+                log(`实时监听错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 停止实时监听
+        function stopListening() {
+            try {
+                if (testListener) {
+                    const testRef = testDatabase.ref('test');
+                    testRef.off('value', testListener);
+                    testListener = null;
+                    
+                    showStatus('listenStatus', '⏹️ 实时监听已停止', 'info');
+                    log('实时监听已停止');
+                } else {
+                    log('没有运行中的监听器');
+                }
+            } catch (error) {
+                log(`停止监听错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 添加Love Note测试
+        async function addLoveNote() {
+            try {
+                const title = document.getElementById('noteTitle').value;
+                const content = document.getElementById('noteContent').value;
+                
+                if (!title.trim() || !content.trim()) {
+                    throw new Error('请输入标题和内容');
+                }
+                
+                log(`添加Love Note: ${title}`);
+                
+                const noteData = {
+                    id: Date.now().toString(),
+                    title: title,
+                    content: content,
+                    timestamp: FirebaseConfig.getServerTimestamp(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                const notesRef = testDatabase.ref('loveNotes');
+                await notesRef.push(noteData);
+                
+                showStatus('loveNotesStatus', '✅ Love Note添加成功', 'success');
+                log('Love Note添加成功');
+                
+                // 清空输入框
+                document.getElementById('noteTitle').value = '';
+                document.getElementById('noteContent').value = '';
+            } catch (error) {
+                showStatus('loveNotesStatus', `❌ 添加失败: ${error.message}`, 'error');
+                log(`Love Note添加错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 加载所有Love Notes
+        async function loadLoveNotes() {
+            try {
+                log('加载所有Love Notes...');
+                
+                const notesRef = testDatabase.ref('loveNotes');
+                const snapshot = await notesRef.once('value');
+                const data = snapshot.val();
+                
+                if (data) {
+                    const notes = Object.keys(data).map(key => ({
+                        firebaseKey: key,
+                        ...data[key]
+                    }));
+                    
+                    showStatus('loveNotesStatus', `✅ 加载成功，共${notes.length}条留言`, 'success');
+                    document.getElementById('loveNotesData').textContent = JSON.stringify(notes, null, 2);
+                    log(`成功加载${notes.length}条Love Notes`);
+                } else {
+                    showStatus('loveNotesStatus', '⚠️ 没有找到留言数据', 'info');
+                    document.getElementById('loveNotesData').textContent = '没有留言数据';
+                    log('没有找到Love Notes数据');
+                }
+            } catch (error) {
+                showStatus('loveNotesStatus', `❌ 加载失败: ${error.message}`, 'error');
+                log(`Love Notes加载错误: ${error.message}`, 'error');
+            }
+        }
+        
+        // 清空日志
+        function clearLog() {
+            document.getElementById('operationLog').textContent = '';
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成，开始初始化Firebase测试');
+            initFirebase();
+        });
+    </script>
+</body>
+</html>
