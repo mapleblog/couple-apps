@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>情侣网站 - 登录</title>
+    
+    <!-- 字体引入 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <style>
+        /* 自定义样式 */
+        .login-container {
+            background: linear-gradient(135deg, #22111a 0%, #482336 100%);
+            min-height: 100vh;
+        }
+        
+        .login-card {
+            background: rgba(34, 17, 26, 0.95);
+            border: 2px solid #f04299;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(240, 66, 153, 0.3);
+        }
+        
+        .google-btn {
+            background: white;
+            border: 1px solid #dadce0;
+            transition: all 0.3s ease;
+        }
+        
+        .google-btn:hover {
+            background: #f8f9fa;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f04299;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+        }
+        
+        .success-message {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            color: #86efac;
+        }
+    </style>
+</head>
+<body class="font-sans">
+    <!-- 主容器 -->
+    <div class="login-container flex items-center justify-center p-4">
+        <!-- 登录卡片 -->
+        <div class="login-card rounded-2xl p-8 w-full max-w-md">
+            <!-- 标题区域 -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+                <p class="text-gray-300 text-lg">登录您的情侣专属空间</p>
+                <div class="w-16 h-1 bg-gradient-to-r from-pink-500 to-purple-500 mx-auto mt-4 rounded-full"></div>
+            </div>
+            
+            <!-- 登录表单区域 -->
+            <div class="space-y-6">
+                <!-- Google登录按钮 -->
+                <button id="googleLoginBtn" class="google-btn w-full py-4 px-6 rounded-xl flex items-center justify-center space-x-3 font-medium text-gray-700">
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <span>使用 Google 账号登录</span>
+                </button>
+                
+                <!-- 加载状态 -->
+                <div id="loadingState" class="hidden text-center py-4">
+                    <div class="loading-spinner mx-auto mb-3"></div>
+                    <p class="text-gray-300">正在登录中...</p>
+                </div>
+                
+                <!-- 错误提示 -->
+                <div id="errorMessage" class="hidden error-message rounded-lg p-4 text-center">
+                    <p id="errorText"></p>
+                    <button id="retryBtn" class="mt-2 text-sm underline hover:no-underline">重试</button>
+                </div>
+                
+                <!-- 成功提示 -->
+                <div id="successMessage" class="hidden success-message rounded-lg p-4 text-center">
+                    <p id="successText"></p>
+                </div>
+            </div>
+            
+            <!-- 装饰元素 -->
+            <div class="mt-8 text-center">
+                <div class="flex items-center justify-center space-x-2 text-gray-400 text-sm">
+                    <div class="w-8 h-px bg-gray-600"></div>
+                    <span>安全登录</span>
+                    <div class="w-8 h-px bg-gray-600"></div>
+                </div>
+                
+                <!-- 爱心装饰 -->
+                <div class="mt-6 flex justify-center space-x-2">
+                    <div class="w-2 h-2 bg-pink-500 rounded-full pulse-animation"></div>
+                    <div class="w-2 h-2 bg-purple-500 rounded-full pulse-animation" style="animation-delay: 0.5s;"></div>
+                    <div class="w-2 h-2 bg-pink-500 rounded-full pulse-animation" style="animation-delay: 1s;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript 文件 -->
+    <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="auth-guard.js"></script>
+    
+    <!-- 登录页面脚本 -->
+    <script>
+        // 页面元素
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const loadingState = document.getElementById('loadingState');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const retryBtn = document.getElementById('retryBtn');
+        const successMessage = document.getElementById('successMessage');
+        const successText = document.getElementById('successText');
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('登录页面加载完成');
+            
+            // 等待Firebase和认证管理器初始化
+            await waitForServices();
+            
+            // 检查用户是否已登录
+            checkAuthState();
+            
+            // 绑定事件监听器
+            bindEventListeners();
+        });
+        
+        /**
+         * 等待服务初始化
+         */
+        async function waitForServices() {
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (attempts < maxAttempts) {
+                if (typeof window.AuthManager !== 'undefined' && 
+                    window.AuthManager.instance !== undefined && 
+                    typeof window.AuthManager.waitForAuthState === 'function') {
+                    console.log('认证服务已就绪');
+                    return true;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            console.warn('认证服务初始化超时');
+            return false;
+        }
+        
+        /**
+         * 检查认证状态
+         */
+        async function checkAuthState() {
+            try {
+                if (typeof window.AuthManager === 'undefined' || 
+                    typeof window.AuthManager.waitForAuthState !== 'function') {
+                    console.warn('认证管理器未完全加载');
+                    return;
+                }
+                
+                // 等待认证状态稳定
+                const user = await window.AuthManager.waitForAuthState(2000);
+                
+                if (user) {
+                    console.log('用户已登录，准备跳转');
+                    showSuccess('已登录，正在跳转到主页...');
+                    
+                    // 延迟跳转，让用户看到提示
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('检查认证状态失败:', error);
+            }
+        }
+        
+        /**
+         * 绑定事件监听器
+         */
+        function bindEventListeners() {
+            // Google登录按钮
+            googleLoginBtn.addEventListener('click', handleGoogleLogin);
+            
+            // 重试按钮
+            retryBtn.addEventListener('click', () => {
+                hideMessages();
+                handleGoogleLogin();
+            });
+            
+            // 键盘事件
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    handleGoogleLogin();
+                }
+            });
+        }
+        
+        /**
+         * 处理Google登录
+         */
+        async function handleGoogleLogin() {
+            try {
+                // 检查认证管理器是否可用
+                if (typeof window.AuthManager === 'undefined') {
+                    throw new Error('认证服务未加载');
+                }
+                
+                // 显示加载状态
+                showLoading();
+                
+                // 执行登录
+                const result = await window.AuthManager.signInWithGoogle();
+                
+                if (result.success) {
+                    console.log('登录成功:', result.user);
+                    showSuccess('登录成功！正在跳转...');
+                    
+                    // 延迟跳转
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } else {
+                    console.error('登录失败:', result.message);
+                    showError(result.message);
+                }
+            } catch (error) {
+                console.error('登录过程出错:', error);
+                showError('登录过程中发生错误，请重试');
+            }
+        }
+        
+        /**
+         * 显示加载状态
+         */
+        function showLoading() {
+            hideMessages();
+            googleLoginBtn.style.display = 'none';
+            loadingState.classList.remove('hidden');
+        }
+        
+        /**
+         * 显示错误信息
+         */
+        function showError(message) {
+            hideMessages();
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+            googleLoginBtn.style.display = 'flex';
+        }
+        
+        /**
+         * 显示成功信息
+         */
+        function showSuccess(message) {
+            hideMessages();
+            successText.textContent = message;
+            successMessage.classList.remove('hidden');
+        }
+        
+        /**
+         * 隐藏所有消息
+         */
+        function hideMessages() {
+            loadingState.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

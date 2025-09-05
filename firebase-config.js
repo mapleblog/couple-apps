@@ -15,6 +15,8 @@ const firebaseConfig = {
 // Firebase应用实例
 let app = null;
 let database = null;
+let auth = null;
+let googleProvider = null;
 
 /**
  * 初始化Firebase应用
@@ -43,6 +45,21 @@ async function initializeFirebase() {
       database.goOnline();
       
       console.log('Firebase Realtime Database初始化成功');
+    }
+
+    // 初始化Firebase Authentication
+    if (!auth) {
+      auth = firebase.auth();
+      console.log('Firebase Authentication初始化成功');
+    }
+
+    // 初始化Google认证提供商
+    if (!googleProvider) {
+      googleProvider = new firebase.auth.GoogleAuthProvider();
+      // 设置认证范围
+      googleProvider.addScope('profile');
+      googleProvider.addScope('email');
+      console.log('Google认证提供商初始化成功');
     }
 
     return true;
@@ -99,6 +116,30 @@ function getServerTimestamp() {
   return firebase.database.ServerValue.TIMESTAMP;
 }
 
+/**
+ * 获取认证实例
+ * @returns {firebase.auth.Auth|null} 认证实例
+ */
+function getAuth() {
+  if (!auth) {
+    console.warn('认证服务未初始化');
+    return null;
+  }
+  return auth;
+}
+
+/**
+ * 获取Google认证提供商
+ * @returns {firebase.auth.GoogleAuthProvider|null} Google认证提供商
+ */
+function getGoogleProvider() {
+  if (!googleProvider) {
+    console.warn('Google认证提供商未初始化');
+    return null;
+  }
+  return googleProvider;
+}
+
 // 导出配置和函数
 window.FirebaseConfig = {
   config: firebaseConfig,
@@ -106,10 +147,14 @@ window.FirebaseConfig = {
   getDatabaseRef: getDatabaseRef,
   checkConnection: checkFirebaseConnection,
   getServerTimestamp: getServerTimestamp,
+  getAuth: getAuth,
+  getGoogleProvider: getGoogleProvider,
   
   // 获取应用和数据库实例
   get app() { return app; },
-  get database() { return database; }
+  get database() { return database; },
+  get auth() { return auth; },
+  get googleProvider() { return googleProvider; }
 };
 
 // 自动初始化（如果Firebase SDK已加载）

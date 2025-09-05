@@ -16,8 +16,50 @@
     <script src="script.js" defer></script>
   </head>
   <body>
+    <!-- 用户信息头部 -->
+    <div id="userInfoHeader" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <!-- 用户信息 -->
+                <div class="flex items-center space-x-3">
+                    <img id="userAvatar" src="" alt="用户头像" class="w-10 h-10 rounded-full border-2 border-white shadow-md">
+                    <div class="text-white">
+                        <div id="userName" class="font-semibold text-sm">用户名</div>
+                        <div id="userEmail" class="text-xs opacity-90">用户邮箱</div>
+                    </div>
+                </div>
+                
+                <!-- 登出按钮 -->
+                <button id="logoutBtn" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 登录提示 -->
+    <div id="loginPrompt" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-pink-500 via-purple-500 to-pink-600 shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex items-center justify-between">
+                <div class="text-white">
+                    <div class="font-semibold text-sm">欢迎来到情侣空间</div>
+                    <div class="text-xs opacity-90">请登录以享受完整功能</div>
+                </div>
+                
+                <a href="loginpange.html" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 backdrop-blur-sm border border-white/20 hover:border-white/40">
+                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m0 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    立即登录
+                </a>
+            </div>
+        </div>
+    </div>
     <div
-      class="relative flex size-full min-h-screen flex-col bg-[#22111a] dark group/design-root overflow-x-hidden main-container"
+      class="relative flex size-full min-h-screen flex-col bg-[#22111a] dark group/design-root overflow-x-hidden main-container pt-16"
     >
       <div class="layout-container flex h-full grow flex-col">
         <div class="px-40 flex flex-1 justify-center py-5">
@@ -316,16 +358,174 @@
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
-    <!-- Firebase configuration and database modules -->
+    <!-- Firebase configuration and authentication modules -->
     <script src="firebase-config.js"></script>
+    <script src="auth.js"></script>
+    <script src="auth-guard.js"></script>
     <script src="firebase-db.js"></script>
     
     <!-- Avatar management script -->
     <script src="avatar-manager.js"></script>
     <!-- Video configuration file -->
     <script src="video-config.js"></script>
+    
+    <!-- User Authentication Script -->
+    <script>
+        // 页面认证和用户信息管理
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('主页面加载完成，初始化认证状态');
+            
+            // 等待认证服务初始化
+            await waitForAuthServices();
+            
+            // 初始化认证状态监听
+            initAuthStateListener();
+            
+            // 绑定登出按钮事件
+            bindLogoutEvent();
+        });
+      
+        /**
+         * 等待认证服务初始化
+         */
+        async function waitForAuthServices() {
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (attempts < maxAttempts) {
+                if (window.AuthManager && window.AuthManager.instance) {
+                    console.log('认证服务已就绪');
+                    return true;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            console.warn('认证服务初始化超时');
+            return false;
+        }
+      
+        /**
+         * 初始化认证状态监听
+         */
+        function initAuthStateListener() {
+            if (!window.AuthManager || !window.AuthManager.onAuthStateChanged) {
+                console.warn('认证管理器未加载或方法不可用，显示登录提示');
+                showLoginPrompt();
+                return;
+            }
+            
+            // 监听认证状态变化
+            window.AuthManager.onAuthStateChanged((user) => {
+                console.log('认证状态变化:', user ? '已登录' : '未登录');
+                
+                if (user) {
+                    showUserInfo(user);
+                    hideLoginPrompt();
+                } else {
+                    hideUserInfo();
+                    showLoginPrompt();
+                }
+            });
+        }
+      
+        /**
+         * 显示用户信息
+         */
+        function showUserInfo(user) {
+            const userInfoHeader = document.getElementById('userInfoHeader');
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            const userEmail = document.getElementById('userEmail');
+            
+            if (userInfoHeader && userAvatar && userName && userEmail) {
+                // 更新用户信息
+                userAvatar.src = user.photoURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMjAiIGZpbGw9IiNmMDQyOTkiLz4KPHN2ZyB4PSI4IiB5PSI4IiB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIGZpbGw9IndoaXRlIiB2aWV3Qm94PSIwIDAgMjU2IDI1NiI+CjxwYXRoIGQ9Ik0yMzAuOTIsMjEyYy0xNS4yMy0yNi4zMy0zOC43LTQ1LjIxLTY2LjA5LTU0LjE2YTcyLDcyLDAsMSwwLTczLjY2LDBDNjMuNzgsMTY2Ljc4LDQwLjMxLDE4NS42NiwyNS4wOCwyMTJhOCw4LDAsMSwwLDEzLjg1LDhjMTguODQtMzIuNTYsNTIuMTQtNTIsODkuMDctNTJzNzAuMjMsMTkuNDQsODkuMDcsNTJhOCw4LDAsMSwwLDEzLjg1LThaTTcyLDk2YTU2LDU2LDAsMSwxLDU2LDU2QTU2LjA2LDU2LjA2LDAsMCwxLDcyLDk2WiIvPgo8L3N2Zz4KPC9zdmc+';
+                userName.textContent = user.displayName || '用户';
+                userEmail.textContent = user.email || '';
+                
+                // 显示用户信息头部
+                userInfoHeader.classList.remove('hidden');
+                
+                console.log('用户信息已显示:', {
+                    name: user.displayName,
+                    email: user.email,
+                    photo: user.photoURL
+                });
+            }
+        }
+      
+        /**
+         * 隐藏用户信息
+         */
+        function hideUserInfo() {
+            const userInfoHeader = document.getElementById('userInfoHeader');
+            if (userInfoHeader) {
+                userInfoHeader.classList.add('hidden');
+            }
+        }
+        
+        /**
+         * 显示登录提示
+         */
+        function showLoginPrompt() {
+            const loginPrompt = document.getElementById('loginPrompt');
+            if (loginPrompt) {
+                loginPrompt.classList.remove('hidden');
+            }
+        }
+        
+        /**
+         * 隐藏登录提示
+         */
+        function hideLoginPrompt() {
+            const loginPrompt = document.getElementById('loginPrompt');
+            if (loginPrompt) {
+                loginPrompt.classList.add('hidden');
+            }
+        }
+      
+        /**
+         * 绑定登出按钮事件
+         */
+        function bindLogoutEvent() {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+        }
+        
+        /**
+         * 处理登出
+         */
+        async function handleLogout() {
+            try {
+                if (!window.AuthManager) {
+                    console.warn('认证管理器未加载');
+                    return;
+                }
+                
+                console.log('开始登出流程');
+                
+                const result = await window.AuthManager.signOut();
+                
+                if (result.success) {
+                    console.log('登出成功');
+                    // 认证状态监听器会自动处理UI更新
+                } else {
+                    console.error('登出失败:', result.message);
+                    alert('登出失败，请重试');
+                }
+            } catch (error) {
+                console.error('登出过程出错:', error);
+                alert('登出过程中发生错误');
+            }
+        }
+    </script>
   </body>
 </html>
 
