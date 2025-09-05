@@ -538,7 +538,7 @@ class LoveNotesManager {
         this.notes = [];
         this.selectedColor = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         this.currentPage = 1;
-        this.itemsPerPage = 4;
+        this.itemsPerPage = 6;
         this.totalPages = 1;
         
         // Firebase集成
@@ -873,29 +873,16 @@ class LoveNotesManager {
     }
     
     renderNotes() {
-        // Find the Love Notes container by looking for the container after the Love Notes heading
-        const loveNotesHeading = document.querySelector('h2');
-        let container = null;
-        
-        // Find the next grid container after the Love Notes heading
-        let currentElement = loveNotesHeading.parentElement.nextElementSibling;
-        while (currentElement) {
-            if (currentElement.classList.contains('grid') && 
-                currentElement.classList.contains('gap-3') && 
-                currentElement.classList.contains('p-4')) {
-                container = currentElement;
-                break;
-            }
-            currentElement = currentElement.nextElementSibling;
-        }
+        // Find the Love Notes container using the new ID
+        const container = document.getElementById('loveNotesContainer');
         
         if (!container) {
             console.error('Love notes container not found');
             return;
         }
         
-        // Clear existing user notes but keep the invisible image
-        const userNotes = container.querySelectorAll('.user-note');
+        // Clear existing user notes
+        const userNotes = container.querySelectorAll('.love-note-card');
         userNotes.forEach(note => note.remove());
         
         // Calculate pagination
@@ -906,15 +893,10 @@ class LoveNotesManager {
         const endIndex = startIndex + this.itemsPerPage;
         const currentPageNotes = this.notes.slice(startIndex, endIndex);
         
-        // Render current page notes before the invisible image
-        const invisibleImg = container.querySelector('img.invisible');
+        // Render current page notes
         currentPageNotes.forEach(note => {
             const noteElement = this.createNoteElement(note);
-            if (invisibleImg) {
-                container.insertBefore(noteElement, invisibleImg);
-            } else {
-                container.appendChild(noteElement);
-            }
+            container.appendChild(noteElement);
         });
         
         // Update pagination UI
@@ -923,7 +905,7 @@ class LoveNotesManager {
     
     createNoteElement(note) {
         const noteDiv = document.createElement('div');
-        noteDiv.className = 'bg-cover bg-center flex flex-col gap-3 rounded-lg justify-end p-4 aspect-square user-note relative group';
+        noteDiv.className = 'love-note-card relative group';
         noteDiv.style.background = note.backgroundColor;
         noteDiv.dataset.noteId = note.id;
         

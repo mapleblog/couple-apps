@@ -8,6 +8,61 @@ body {
     background-color: #22111a;
 }
 
+/* Love Notes Grid Layout - 2x3 Grid */
+.love-notes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* Love Notes Card Styling */
+.love-note-card {
+    aspect-ratio: 4/3;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    min-height: 200px;
+}
+
+.love-note-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive Design for Mobile */
+@media (max-width: 768px) {
+    .love-notes-grid {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        gap: 1rem;
+        padding: 0.5rem;
+    }
+    
+    .love-note-card {
+        min-height: 150px;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 1024px) and (min-width: 769px) {
+    .love-notes-grid {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+}
+
 /* Background image styles */
 .hero-background {
     background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBCVImMT4o4mF43LGDerfPlaUCkjKvnpJjGGeTsfsognd_2mRYz2wYmOt922JD2EGRDwKL1l0dFmUQyT74L1vfPq0h_Sa99BDNm7zi3BeMumBmQW8TSZgnjcLuCvFqyNQ11CrJTVkoClSalmxA5krWlfiBeGiGq5k4FSm9rM9AdN-NH6f4TeFwXESB_AG8UMxdp-7o5CoJUQFlWV3MFlxAppu_vix2zJHxExxi6-04hQmv8GLOoPb_4qTsio5gOuZXn3sU4yPo4JmY");
