@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player Function Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        button {
+            background: #f04299;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #d63384;
+        }
+        .status {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #2a2a2a;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video Player Function Test Page</h1>
+    
+    <div class="test-section">
+        <h2>1. Basic Function Test</h2>
+        <p>Check if video player is properly initialized:</p>
+        <button onclick="checkVideoPlayer()">Check VideoPlayer Status</button>
+        <div id="playerStatus" class="status">Waiting for check...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Video Link Configuration Test</h2>
+        <p>Test custom video link functionality:</p>
+        <input type="text" id="videoUrlInput" placeholder="Enter video link, e.g.: https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4">
+        <br><br>
+        <button onclick="testVideoUrl()">Set Video Link</button>
+        <button onclick="testSampleVideo()">Use Sample Video</button>
+        <div id="videoTestResult" class="status">Waiting for test...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Configuration Method Test</h2>
+        <p>Test if configuration functions are available:</p>
+        <button onclick="testConfigFunctions()">Test Configuration Functions</button>
+        <div id="configTestResult" class="status">Waiting for test...</div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Return to Main Page</h2>
+        <p>Return to main page after testing:</p>
+        <button onclick="goBack()">Return to Main Page</button>
+    </div>
+    
+    <script>
+        // Wait for page to load
+        window.addEventListener('load', function() {
+            // Check if main page VideoPlayer is accessible
+            if (window.opener && window.opener.videoPlayer) {
+                console.log('Main page VideoPlayer is accessible');
+            } else {
+                console.log('Cannot access main page VideoPlayer, will test in iframe');
+            }
+        });
+        
+        function checkVideoPlayer() {
+            const statusDiv = document.getElementById('playerStatus');
+            
+            if (window.opener && window.opener.videoPlayer) {
+                const player = window.opener.videoPlayer;
+                const status = player.getStatus();
+                
+                statusDiv.innerHTML = `
+                    <strong>VideoPlayer Status:</strong><br>
+                - Is Playing: ${status.isPlaying}<br>
+                - Is Loading: ${status.isLoading}<br>
+                - Has Error: ${status.hasError}<br>
+                - Current Video URL: ${status.videoUrl || 'Not set'}<br>
+                - Play Time: ${status.currentTime || 0} seconds<br>
+                - Video Duration: ${status.duration || 'Unknown'} seconds
+                `;
+            } else {
+                statusDiv.innerHTML = '<span style="color: orange;">Cannot access main page VideoPlayer, please test on main page</span>';
+            }
+        }
+        
+        function testVideoUrl() {
+            const url = document.getElementById('videoUrlInput').value;
+            const resultDiv = document.getElementById('videoTestResult');
+            
+            if (!url) {
+                resultDiv.innerHTML = '<span style="color: red;">Please enter video link</span>';
+                return;
+            }
+            
+            if (window.opener && window.opener.videoPlayer) {
+                const success = window.opener.videoPlayer.setVideoUrl(url);
+                resultDiv.innerHTML = success ? 
+                    `<span style="color: green;">Video link set successfully: ${url}</span>` :
+                '<span style="color: red;">Failed to set video link</span>';
+            } else {
+                resultDiv.innerHTML = '<span style="color: orange;">Cannot access main page VideoPlayer</span>';
+            }
+        }
+        
+        function testSampleVideo() {
+            const resultDiv = document.getElementById('videoTestResult');
+            
+            // Use a public sample video
+            const sampleUrl = 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4';
+            
+            if (window.opener && window.opener.videoPlayer) {
+                const success = window.opener.videoPlayer.setVideoUrl(sampleUrl);
+                resultDiv.innerHTML = success ? 
+                    `<span style="color: green;">Sample video set successfully</span>` :
+                '<span style="color: red;">Failed to set sample video</span>';
+            } else {
+                resultDiv.innerHTML = '<span style="color: orange;">Cannot access main page VideoPlayer</span>';
+            }
+        }
+        
+        function testConfigFunctions() {
+            const resultDiv = document.getElementById('configTestResult');
+            
+            if (window.opener) {
+                const hasSetCustomVideo = typeof window.opener.setCustomVideo === 'function';
+                const hasUseExampleVideo = typeof window.opener.useExampleVideo === 'function';
+                const hasVideoConfig = typeof window.opener.videoConfig === 'object';
+                
+                resultDiv.innerHTML = `
+                    <strong>Configuration Function Check:</strong><br>
+                - setCustomVideo function: ${hasSetCustomVideo ? '✓ Available' : '✗ Not available'}<br>
+                - useExampleVideo function: ${hasUseExampleVideo ? '✓ Available' : '✗ Not available'}<br>
+                - videoConfig object: ${hasVideoConfig ? '✓ Available' : '✗ Not available'}
+                `;
+            } else {
+                resultDiv.innerHTML = '<span style="color: orange;">Cannot access main page</span>';
+            }
+        }
+        
+        function goBack() {
+            if (window.opener) {
+                window.close();
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+</body>
+</html>
